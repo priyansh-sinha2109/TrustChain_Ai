@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { authFailure } from "@/lib/authErrors";
 import { ArrowLeft, Check, AlertCircle, Loader2 } from "lucide-react";
 
 export default function AuthPage() {
@@ -11,14 +12,32 @@ export default function AuthPage() {
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [orgName, setOrgName] = useState("Ashwamedha Works");
+  const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [diagnostic, setDiagnostic] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const pending = useRef(false);
+  useEffect(() => {
+    if (!cooldown) return;
+    const timer = setTimeout(() => setCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+  function showFailure(failure: unknown) {
+    const result = authFailure(failure);
+    setError(result.message);
+    setDiagnostic(result.diagnostic);
+    if (result.limited) setCooldown(60);
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (pending.current || cooldown) return;
+    pending.current = true;
     setError(null);
+    setSuccessMsg(null);
+    setDiagnostic("");
     setLoading(true);
 
     try {
@@ -33,16 +52,20 @@ export default function AuthPage() {
       setSuccessMsg("Signed in. Opening workspace...");
       router.push("/dashboard");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to sign in";
-      setError(msg);
+      showFailure(err);
     } finally {
       setLoading(false);
+      pending.current = false;
     }
   }
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    if (pending.current || cooldown) return;
+    pending.current = true;
     setError(null);
+    setSuccessMsg(null);
+    setDiagnostic("");
     setLoading(true);
 
     try {
@@ -50,6 +73,7 @@ export default function AuthPage() {
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             organization_name: orgName,
           },
@@ -57,13 +81,14 @@ export default function AuthPage() {
       });
 
       if (sbError) throw sbError;
-      setSuccessMsg(data.session ? "Account created. An administrator must assign your organisation membership." : "Check your email to confirm your account. An administrator must assign your organisation membership.");
-      if (data.session) router.push("/dashboard");
+      if (!data.user) throw new Error("No account response returned.");
+      setSuccessMsg(data.session ? "Account authenticated. Complete workspace setup next." : "Signup request accepted. If eligible, check your email to confirm your account, then sign in to set up your workspace.");
+      if (data.session) router.push("/onboarding");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to create account";
-      setError(msg);
+      showFailure(err);
     } finally {
       setLoading(false);
+      pending.current = false;
     }
   }
 
@@ -147,9 +172,10 @@ export default function AuthPage() {
           <div className="flex bg-[#e8e6dc] p-1 rounded-lg">
             <button
               type="button"
+              disabled={loading}
               onClick={() => {
                 setTab("login");
-                setError(null);
+                setError(null); setSuccessMsg(null); setDiagnostic("");
               }}
               className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                 tab === "login"
@@ -161,9 +187,10 @@ export default function AuthPage() {
             </button>
             <button
               type="button"
+              disabled={loading}
               onClick={() => {
                 setTab("signup");
-                setError(null);
+                setError(null); setSuccessMsg(null); setDiagnostic("");
               }}
               className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                 tab === "signup"
@@ -178,7 +205,7 @@ export default function AuthPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+              <span>{error}{diagnostic ? <small className="block mt-1">{diagnostic}</small> : null}</span>
             </div>
           )}
 
@@ -255,12 +282,12 @@ export default function AuthPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || cooldown > 0}
               className="w-full btn-primary py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 mt-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>
-                {tab === "login"
+                {cooldown ? `Try again in ${cooldown}s` : tab === "login"
                   ? "Log in to workspace"
                   : "Create a free account"}
               </span>

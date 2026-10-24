@@ -5,6 +5,10 @@ import { MOCK_CASES, MOCK_DOCUMENTS, MOCK_FINDINGS_TC024, MOCK_JOB_TC024 } from 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:8000";
 // Demo is an explicit build-time choice. Network/auth failures never enable it.
 export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+export type Membership = { user_id: string; org_id: string; organization_name: string; role: "buyer" | "reviewer" | "admin" };
+export class ApiError extends Error {
+  constructor(message: string, public code: string, public status: number) { super(message); }
+}
 
 async function response(path: string, options: RequestInit = {}): Promise<Response> {
   const token = await getAccessToken();
@@ -15,7 +19,7 @@ async function response(path: string, options: RequestInit = {}): Promise<Respon
   const result = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   if (!result.ok) {
     const error = await result.json().catch(() => null);
-    throw new Error(error?.error?.message || `Request failed (${result.status}).`);
+    throw new ApiError(error?.error?.message || `Request failed (${result.status}).`, error?.error?.code || "REQUEST_FAILED", result.status);
   }
   return result;
 }
@@ -30,6 +34,8 @@ function liveWrite() {
 }
 
 export const api = {
+  async getMembership(): Promise<Membership> { return request("/api/v1/membership"); },
+  async createWorkspace(name: string): Promise<Membership> { liveWrite(); return request("/api/v1/onboarding/workspace", { method: "POST", body: JSON.stringify({ organization_name: name }) }); },
   async checkHealth() { return fetch(`${API_BASE_URL}/health`).then(r => r.ok).catch(() => false); },
   async getCases(): Promise<Case[]> { return DEMO_MODE ? MOCK_CASES : request("/api/v1/cases"); },
   async getCase(id: string): Promise<Case> {

@@ -13,18 +13,20 @@ const rfqId = "55555555-5555-4555-8555-555555555555";
 const purchase = { id: caseId, supplier_id: "synthetic-supplier", title: "SYNTHETIC browser fixture", supplier_name: "SYNTHETIC purchasing fixture", public_supplier_url: "https://example.com" };
 const pdf = Buffer.from("%PDF-1.4\nSYNTHETIC browser contract fixture\n%%EOF");
 
-async function fixtures(page: Page, options: { loginFailure?: boolean; casesFailure?: boolean; failedJob?: boolean; uploadFailure?: boolean; staleFindings?: boolean } = {}) {
+async function fixtures(page: Page, options: { loginFailure?: boolean; casesFailure?: boolean; failedJob?: boolean; uploadFailure?: boolean; staleFindings?: boolean; authCode?: string; authStatus?: number; noMembership?: boolean } = {}) {
   const documents: Record<string, unknown>[] = [];
   let polls = 0;
   let reviews = 0;
   let reviewed = false;
+  let provisioned = !options.noMembership;
+  const metrics = { authRequests: 0, workspaceRequests: 0 };
   const source = (id: string, type: string, value: string) => ({ document_id: id, document_type: type, field_key: "thickness", value, unit: "mm", page_number: 1, raw_text: `SYNTHETIC thickness: ${value} mm` });
   const findings = { case_id: caseId, job_id: jobId, supplier_id: purchase.supplier_id, baseline_document_id: quoteId, final_document_id: finalId,
     created_at: "2026-10-24T13:00:00Z", investigation_status: "REVIEW_READY",
     findings: [{ field_key: "thickness", category: "TECHNICAL", status: "CONFLICT", severity: "HIGH", baseline: [source(quoteId, "ACCEPTED_QUOTE", "8")], final: [source(finalId, "FINAL_PI", "6")], explanation: "SYNTHETIC fixture: accepted 8 mm differs from final 6 mm." }],
     advance_exposure: { status: "CALCULATED", currency: "INR", baseline_amount: "144000.00", final_amount: "384000.00", difference: "240000.00" },
     evidence: [{ provider_run_id: "SYNTHETIC-mocked-run", source_url: "https://example.com", observation: "SYNTHETIC public observation; not supplier evidence.", captured_at: "2026-10-24T13:00:00Z" }] };
-  const cors = { "access-control-allow-origin": "http://localhost:3107", "access-control-allow-headers": "authorization,apikey,content-type,idempotency-key,x-client-info,x-supabase-api-version", "access-control-allow-methods": "GET,POST,PUT,OPTIONS", "content-type": "application/json" };
+  const cors = { "access-control-allow-origin": "http://localhost:3107", "access-control-allow-headers": "authorization,apikey,content-type,idempotency-key,x-client-info,x-supabase-api-version", "access-control-allow-methods": "GET,POST,PUT,OPTIONS", "access-control-expose-headers": "x-supabase-api-version", "x-supabase-api-version": "2024-01-01", "content-type": "application/json" };
   await page.route("**/*", async route => {
     const req = route.request();
     const url = new URL(req.url());
@@ -32,6 +34,8 @@ async function fixtures(page: Page, options: { loginFailure?: boolean; casesFail
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     const reply = (body: unknown, status = 200) => route.fulfill({ status, headers: cors, body: JSON.stringify(body) });
     if (url.pathname.startsWith("/auth/v1/")) {
+      metrics.authRequests++;
+      if (options.authCode) return reply({ code: options.authCode, msg: "Synthetic Auth error" }, options.authStatus || 429);
       if (options.loginFailure) return reply({ error_code: "invalid_credentials", msg: "Invalid login credentials" }, 400);
       const user = { id: "66666666-6666-4666-8666-666666666666", aud: "authenticated", role: "authenticated", email: "synthetic@example.com", app_metadata: {}, user_metadata: {}, created_at: "2026-10-24T00:00:00Z" };
       // Auth SDK parses JWT claims locally; the signature is deliberately invalid.
@@ -42,6 +46,9 @@ async function fixtures(page: Page, options: { loginFailure?: boolean; casesFail
     if (url.port !== "8000") return route.abort(); // Block all unmocked external traffic.
     const path = url.pathname;
     if (path === "/health") return reply({ status: "ok" });
+    const membership = { user_id: "66666666-6666-4666-8666-666666666666", org_id: "synthetic-org", organization_name: "SYNTHETIC workspace", role: "buyer" };
+    if (path === "/api/v1/membership") return provisioned ? reply(membership) : reply({ error: { code: "MEMBERSHIP_REQUIRED", message: "Exactly one active organisation membership is required." } }, 403);
+    if (path === "/api/v1/onboarding/workspace") { metrics.workspaceRequests++; expect(req.postDataJSON()).toEqual({ organization_name: "SYNTHETIC new workspace" }); provisioned = true; return reply(membership); }
     if (path === "/api/v1/cases") {
       if (options.casesFailure) return reply({ error: { message: "Synthetic API outage" } }, 503);
       if (req.method() === "POST") expect(req.postDataJSON()).toEqual({ title: purchase.title, supplier_name: purchase.supplier_name, public_supplier_url: purchase.public_supplier_url });
@@ -73,6 +80,7 @@ async function fixtures(page: Page, options: { loginFailure?: boolean; casesFail
     }
     return reply({ error: { message: `Unmocked fixture path: ${path}` } }, 500);
   });
+  return metrics;
 }
 
 async function login(page: Page) {
@@ -161,4 +169,32 @@ test("progress does not mix a newer result with the selected job", async ({ page
   await page.goto(`/cases/${caseId}/progress?job_id=${jobId}`);
   await expect(page.getByText("A newer investigation is available. Open findings to view its results.")).toBeVisible({ timeout: 15000 });
   await expect(page.getByText("INR 2,40,000.00", { exact: true })).toHaveCount(0);
+});
+
+for (const code of ["over_email_send_rate_limit", "over_request_rate_limit", "unknown_limit"]) {
+  test(`signup rate limit stays unsuccessful: ${code}`, async ({ page }) => {
+    const metrics = await fixtures(page, { authCode: code });
+    await page.goto("/auth");
+    await page.getByRole("button", { name: "Create account", exact: true }).click();
+    await page.getByPlaceholder("Your company or workshop").fill("SYNTHETIC workspace");
+    await page.locator('input[type="email"]').fill("synthetic@example.com");
+    await page.locator('input[type="password"]').fill("SYNTHETIC-not-a-real-password");
+    // Two immediate submissions must produce one Auth request.
+    await page.locator("form").evaluate(form => { form.requestSubmit(); form.requestSubmit(); });
+    await expect(page.getByText(code === "over_email_send_rate_limit" ? /Email delivery limit reached/ : /Too many authentication requests/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /Try again in/ })).toBeDisabled();
+    expect(metrics.authRequests).toBe(1);
+    await expect(page).toHaveURL(/auth/);
+    await expect(page.getByText(/Signup request accepted|Signed in\. Opening/)).toHaveCount(0);
+  });
+}
+
+test("authenticated user without membership completes explicit buyer onboarding", async ({ page }) => {
+  const metrics = await fixtures(page, { noMembership: true });
+  await login(page);
+  await expect(page).toHaveURL(/onboarding/);
+  await page.getByLabel("Organisation name").fill("SYNTHETIC new workspace");
+  await page.getByRole("button", { name: "Create buyer workspace" }).click();
+  await expect(page).toHaveURL(/dashboard/);
+  expect(metrics.workspaceRequests).toBe(1);
 });

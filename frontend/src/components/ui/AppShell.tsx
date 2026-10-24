@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
-import { DEMO_MODE } from "@/lib/api";
+import { api, ApiError, DEMO_MODE } from "@/lib/api";
 import { SyntheticBanner } from "./SyntheticBanner";
 
 interface AppShellProps {
@@ -33,15 +33,26 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
   const router = useRouter();
   const [identity, setIdentity] = useState("");
   const [authenticated, setAuthenticated] = useState(DEMO_MODE);
+  const [membershipError, setMembershipError] = useState("");
+  const [workspace, setWorkspace] = useState("");
   const matchedCase = pathname.match(/^\/cases\/([^/]+)/)?.[1];
   const caseId = matchedCase === "new" ? undefined : matchedCase;
   useEffect(() => {
     if (DEMO_MODE) return;
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
       if (!data.session) { router.replace("/auth"); return; }
-      setAuthenticated(true);
+      try {
+        const membership = await api.getMembership();
+        if (!mounted) return;
+        setWorkspace(membership.organization_name);
+        setAuthenticated(true);
+      } catch (failure) {
+        if (!mounted) return;
+        if (failure instanceof ApiError && failure.code === "MEMBERSHIP_REQUIRED") router.replace("/onboarding");
+        else setMembershipError(failure instanceof Error ? failure.message : "Unable to verify membership.");
+      }
       setIdentity(data.session.user.email || "Signed-in member");
     }).catch(() => { if (mounted) router.replace("/auth"); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -84,6 +95,7 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
     },
   ];
 
+  if (membershipError) return <main className="p-8"><p role="alert">{membershipError}</p><a href="/auth" className="underline">Return to sign in</a></main>;
   if (!authenticated) return <p role="status" className="p-8">Checking your session...</p>;
 
   return (
@@ -134,7 +146,7 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
               Workspace
             </span>
             <div className="mt-1 flex items-center justify-between px-3 py-2 bg-[#f4f4f2] rounded-lg text-sm font-medium text-[#18181b] cursor-pointer hover:bg-[#eae8e0] transition-colors">
-              <span className="truncate">{DEMO_MODE ? "Illustrative workspace" : "Your workspace"}</span>
+              <span className="truncate">{DEMO_MODE ? "Illustrative workspace" : workspace}</span>
               <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />
             </div>
           </div>
