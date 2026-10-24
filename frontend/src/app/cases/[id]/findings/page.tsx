@@ -2,6 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
+import { LiveCaseWorkspace } from "@/components/ui/LiveCaseWorkspace";
+import { DEMO_MODE } from "@/lib/api";
 import React, { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/ui/AppShell";
@@ -15,7 +17,7 @@ import {
   FileSearch,
 } from "lucide-react";
 
-export default function FindingsPage({
+function IllustrativeFindingsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -271,4 +273,9 @@ export default function FindingsPage({
       </div>
     </AppShell>
   );
+}
+
+export default function ConnectedFindings({ params }: { params: Promise<{ id: string }> }) {
+ const { id } = use(params);
+ return DEMO_MODE ? <IllustrativeFindingsPage params={params} /> : <LiveCaseWorkspace id={id} view="findings" />;
 }

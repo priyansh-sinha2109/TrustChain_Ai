@@ -10,22 +10,18 @@ interface ExposureCardProps {
 export function ExposureCard({
   exposure,
   className = "",
-  orderValue = "₹4,80,000",
+  orderValue,
 }: ExposureCardProps) {
-  const difference = exposure?.difference
-    ? `₹${Number(exposure.difference).toLocaleString("en-IN")}`
-    : "₹2,40,000";
+  const money = (value?: string | null) => value == null ? "Not calculated" :
+    `${exposure?.currency || ""} ${Number(value).toLocaleString("en-IN", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+  const difference = exposure?.status === "CALCULATED" ? money(exposure.difference) : "Not calculated";
 
-  const baselinePercent = exposure?.baseline_percentage ?? 30;
-  const finalPercent = exposure?.final_percentage ?? 80;
+  const baselinePercent = exposure?.baseline_percentage;
+  const finalPercent = exposure?.final_percentage;
 
-  const baselineAmount = exposure?.baseline_amount
-    ? `₹${Number(exposure.baseline_amount).toLocaleString("en-IN")}`
-    : "₹1,44,000";
+  const baselineAmount = money(exposure?.baseline_amount);
 
-  const finalAmount = exposure?.final_amount
-    ? `₹${Number(exposure.final_amount).toLocaleString("en-IN")}`
-    : "₹3,84,000";
+  const finalAmount = money(exposure?.final_amount);
 
   return (
     <div
@@ -41,18 +37,18 @@ export function ExposureCard({
 
         <div className="space-y-1.5 text-sm text-gray-200 border-t border-emerald-900/60 pt-4">
           <div className="flex items-center justify-between">
-            <span className="text-gray-300">{baselinePercent}% agreed</span>
+            <span className="text-gray-300">{baselinePercent == null ? "Accepted advance" : `${baselinePercent}% agreed`}</span>
             <span className="font-medium text-white">{baselineAmount}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-300">{finalPercent}% proposed</span>
+            <span className="text-gray-300">{finalPercent == null ? "Final advance" : `${finalPercent}% proposed`}</span>
             <span className="font-medium text-[#fca5a5]">{finalAmount}</span>
           </div>
         </div>
       </div>
 
       <div className="mt-6 pt-4 border-t border-emerald-900/60 text-xs text-gray-400 space-y-1">
-        <p>Order value: {typeof orderValue === "number" ? `₹${orderValue.toLocaleString("en-IN")}` : orderValue}, unchanged.</p>
+        {orderValue != null ? <p>Order value: {orderValue}</p> : <p>Each advance uses its own document total.</p>}
         <p className="text-gray-400 italic">Exposure is not a loss estimate.</p>
       </div>
     </div>

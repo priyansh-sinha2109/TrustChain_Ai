@@ -194,3 +194,15 @@ async def test_stale_worker_stops_without_marking_replacement_failed(setup):
     repo.update_job=AsyncMock(side_effect=AppError("LEASE_LOST","A replacement owns the job",409))
     await Investigator(repo,app.state.tinyfish,app.state.processing_slots).execute(repo.owner,job.id)
     assert repo.update_job.await_count==1
+
+
+def test_private_pdf_preview_uses_authorized_bytes_and_disables_caching(setup):
+    app,repo,case_id,data=setup
+    document,content=next(iter(repo.docs.values()))
+    with TestClient(app) as client:
+        response=client.get(f"/api/v1/cases/{case_id}/documents/{document.id}/content")
+        assert response.status_code==200 and response.content==content
+        assert response.headers["content-type"]=="application/pdf"
+        assert response.headers["cache-control"]=="private, no-store"
+        app.dependency_overrides[authenticate]=lambda:User(id=uuid4())
+        assert client.get(f"/api/v1/cases/{case_id}/documents/{document.id}/content").status_code==404

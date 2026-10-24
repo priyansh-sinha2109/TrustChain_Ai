@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Request
+from fastapi.responses import Response
 
 from .comparison import validate_baseline
 from .errors import AppError
@@ -68,6 +69,16 @@ async def approve_document(case_id: UUID, document_id: UUID, data: DocumentAppro
     if not hasattr(repo, "approve_document"):
         raise AppError("APPROVAL_UNAVAILABLE", "Document approval is not supported by the configured adapter.", 503)
     return await repo.approve_document(user.id, case_id, document_id, data.note)
+
+
+@router.get("/cases/{case_id}/documents/{document_id}/content", response_class=Response,
+            responses={200: {"content": {"application/pdf": {}}}})
+async def document_content(case_id: UUID, document_id: UUID, user: CurrentUser, repo: Repo):
+    await repo.get_case(user.id, case_id)
+    _, content = await repo.document_bytes(user.id, case_id, document_id)
+    return Response(content, media_type="application/pdf", headers={
+        "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": 'inline; filename="purchase-document.pdf"'})
 
 
 @router.post("/cases/{case_id}/investigations", response_model=JobAccepted, status_code=202)

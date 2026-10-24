@@ -69,7 +69,7 @@ export default function LandingPage() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              href="/cases/TC-024/findings"
+              href="/help"
               className="btn-secondary py-3.5 px-6 rounded-lg text-sm font-semibold shadow-xs"
             >
               Explore the example

@@ -2,6 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
+import { LiveCaseWorkspace } from "@/components/ui/LiveCaseWorkspace";
+import { DEMO_MODE } from "@/lib/api";
 import React, { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,7 +20,7 @@ import {
   Check,
 } from "lucide-react";
 
-export default function HumanReviewPage({
+function IllustrativeHumanReviewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -349,4 +351,9 @@ export default function HumanReviewPage({
       </div>
     </AppShell>
   );
+}
+
+export default function ConnectedPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return DEMO_MODE ? <IllustrativeHumanReviewPage params={params} /> : <LiveCaseWorkspace id={id} view="review" />;
 }

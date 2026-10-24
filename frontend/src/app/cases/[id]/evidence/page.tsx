@@ -2,6 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
+import { LiveCaseWorkspace } from "@/components/ui/LiveCaseWorkspace";
+import { DEMO_MODE } from "@/lib/api";
 import React, { use, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/ui/AppShell";
@@ -12,7 +14,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-export default function EvidenceExplorerPage({
+function IllustrativeEvidenceExplorerPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -296,4 +298,9 @@ export default function EvidenceExplorerPage({
       </div>
     </AppShell>
   );
+}
+
+export default function ConnectedPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return DEMO_MODE ? <IllustrativeEvidenceExplorerPage params={params} /> : <LiveCaseWorkspace id={id} view="evidence" />;
 }

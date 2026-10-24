@@ -4,19 +4,14 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/ui/AppShell";
 import { api } from "@/lib/api";
-import { ChevronDown, ArrowRight, Save, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 export default function NewCasePage() {
   const router = useRouter();
-  const [title, setTitle] = useState("Precision steel blanks");
-  const [supplierName, setSupplierName] = useState("Kaveri Metalworks");
-  const [referenceNo, setReferenceNo] = useState("PO-2026-084");
-  const [orderValue, setOrderValue] = useState("480000");
-  const [category, setCategory] = useState("Sheet metal & fabrication");
-  const [reviewer, setReviewer] = useState("Aditi Mehta · Procurement manager");
-  const [notes, setNotes] = useState(
-    "Check thickness, delivery and advance terms against the accepted quotation."
-  );
+  const [title, setTitle] = useState("");
+  const [supplierName, setSupplierName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [publicUrl, setPublicUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -27,17 +22,12 @@ export default function NewCasePage() {
       const created = await api.createCase({
         title,
         supplier_name: supplierName,
-        reference_no: referenceNo,
-        order_value_inr: Number(orderValue) || 480000,
-        category,
-        reviewer_name: reviewer,
-        notes,
+        public_supplier_url: publicUrl || null,
       });
 
-      router.push(`/cases/${created.id || "TC-024"}/documents`);
+      router.push(`/cases/${created.id}/documents`);
     } catch (err) {
-      console.error("Failed to create case", err);
-      router.push("/cases/TC-024/documents");
+      setError(err instanceof Error ? err.message : "Case creation failed.");
     } finally {
       setLoading(false);
     }
@@ -46,6 +36,9 @@ export default function NewCasePage() {
   return (
     <AppShell breadcrumb="Workspace / Investigations">
       <div className="max-w-4xl mx-auto space-y-6">
+        {error ? <p role="alert" className="text-red-700">{error}</p> : null}
+        <label className="block text-sm">Public supplier URL (optional)<input aria-label="Public supplier URL" type="url" value={publicUrl} onChange={e => setPublicUrl(e.target.value)} className="block w-full rounded-lg border p-2" /></label>
+        <p className="text-xs text-gray-600">Save the case title, supplier and optional public URL. Commercial terms come from uploaded PDFs. Reviewer permissions come from verified organisation membership.</p>
         {/* Title Header */}
         <div className="space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-[#71717a]">
@@ -112,91 +105,11 @@ export default function NewCasePage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#18181b]">
-                  Purchase order / reference
-                </label>
-                <input
-                  type="text"
-                  value={referenceNo}
-                  onChange={(e) => setReferenceNo(e.target.value)}
-                  placeholder="e.g. PO-2026-084"
-                  className="w-full px-4 py-2.5 bg-white border border-[#dcd9ce] rounded-lg text-sm text-[#18181b] focus:ring-2 focus:ring-[#0d5e4b]"
-                />
-              </div>
-            </div>
-
-            {/* Two column: Order value & Category */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#18181b]">
-                  Order value (INR) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-                    ₹
-                  </span>
-                  <input
-                    type="number"
-                    required
-                    value={orderValue}
-                    onChange={(e) => setOrderValue(e.target.value)}
-                    placeholder="480000"
-                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-[#dcd9ce] rounded-lg text-sm text-[#18181b] focus:ring-2 focus:ring-[#0d5e4b]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#18181b]">
-                  Category
-                </label>
-                <div className="relative">
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full appearance-none px-4 py-2.5 bg-white border border-[#dcd9ce] rounded-lg text-sm text-[#18181b] focus:ring-2 focus:ring-[#0d5e4b] pr-10"
-                  >
-                    <option>Sheet metal &amp; fabrication</option>
-                    <option>Automotive stamping components</option>
-                    <option>CNC machined tooling</option>
-                    <option>General metalworking MSME</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            {/* Authorised reviewer */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#18181b]">
-                Authorised reviewer *
-              </label>
-              <input
-                type="text"
-                required
-                value={reviewer}
-                onChange={(e) => setReviewer(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-[#dcd9ce] rounded-lg text-sm text-[#18181b] focus:ring-2 focus:ring-[#0d5e4b]"
-              />
-            </div>
-
-            {/* Review notes */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#18181b]">
-                Review notes
-              </label>
-              <textarea
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-[#dcd9ce] rounded-lg text-sm text-[#18181b] focus:ring-2 focus:ring-[#0d5e4b]"
-              />
             </div>
           </div>
 
           <div className="pt-2 text-[11px] text-[#71717a]">
-            Illustrative TC-024 dataset · Not a real supplier transaction.
+            Commercial terms and financial exposure are extracted from your uploaded documents.
           </div>
 
           {/* Action buttons */}
@@ -216,8 +129,7 @@ export default function NewCasePage() {
               onClick={() => router.push("/cases")}
               className="btn-secondary py-2.5 px-5 text-sm flex items-center gap-2"
             >
-              <Save className="w-4 h-4" />
-              <span>Save draft</span>
+              <span>Cancel</span>
             </button>
           </div>
         </form>

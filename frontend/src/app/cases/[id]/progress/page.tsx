@@ -2,6 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
+import { LiveCaseWorkspace } from "@/components/ui/LiveCaseWorkspace";
+import { DEMO_MODE } from "@/lib/api";
 import React, { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/ui/AppShell";
@@ -13,7 +15,7 @@ import {
   RotateCw,
 } from "lucide-react";
 
-export default function InvestigationProgressPage({
+function IllustrativeInvestigationProgressPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -251,4 +253,9 @@ export default function InvestigationProgressPage({
       </div>
     </AppShell>
   );
+}
+
+export default function ConnectedPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return DEMO_MODE ? <IllustrativeInvestigationProgressPage params={params} /> : <LiveCaseWorkspace id={id} view="progress" />;
 }

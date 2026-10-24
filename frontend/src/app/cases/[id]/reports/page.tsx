@@ -2,6 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
+import { LiveCaseWorkspace } from "@/components/ui/LiveCaseWorkspace";
+import { DEMO_MODE } from "@/lib/api";
 import React, { use, useState } from "react";
 import { AppShell } from "@/components/ui/AppShell";
 import {
@@ -9,7 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-export default function ReportsPage({
+function IllustrativeReportsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -207,4 +209,9 @@ export default function ReportsPage({
       </div>
     </AppShell>
   );
+}
+
+export default function ConnectedPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return DEMO_MODE ? <IllustrativeReportsPage params={params} /> : <LiveCaseWorkspace id={id} view="reports" />;
 }

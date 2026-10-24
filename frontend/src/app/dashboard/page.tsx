@@ -7,11 +7,12 @@ import { StatCard } from "@/components/ui/StatCard";
 import { ExposureCard } from "@/components/ui/ExposureCard";
 import { StatusBadge } from "@/components/ui/Badge";
 import { SyntheticBanner } from "@/components/ui/SyntheticBanner";
-import { api } from "@/lib/api";
+import { api, DEMO_MODE } from "@/lib/api";
 import { Case } from "@/types/api";
 import { Plus, ArrowRight, ArrowUpRight } from "lucide-react";
 
 export default function DashboardPage() {
+  const [error, setError] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
 
   useEffect(() => {
@@ -20,13 +21,13 @@ export default function DashboardPage() {
         const data = await api.getCases();
         setCases(data);
       } catch (err) {
-        console.error("Failed to load cases", err);
+        setError(err instanceof Error ? err.message : "Unable to load investigations.");
       }
     }
     loadData();
   }, []);
 
-  const totalCases = cases.length || 4;
+  const totalCases = cases.length;
   const awaitingReview = cases.filter((c) =>
     c.status?.toLowerCase().includes("await") || c.id === "TC-024"
   ).length;
@@ -37,14 +38,15 @@ export default function DashboardPage() {
   return (
     <AppShell breadcrumb="Workspace / Overview">
       <div className="space-y-8">
+        {error ? <p role="alert" className="text-red-700">{error}</p> : null}
         {/* Top Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#71717a]">
-              Overview / Demo Workspace
+              Overview / Workspace
             </span>
             <h1 className="text-3xl font-extrabold text-[#18181b] tracking-tight mt-0.5">
-              Good morning, Aditi.
+              Your purchasing workspace.
             </h1>
             <p className="text-sm text-[#71717a] mt-0.5">
               A clear view of your checks before the next payment.
@@ -83,7 +85,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Highlighted Next Decision: Split Hero Card */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {DEMO_MODE ? <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           {/* Left Side: Decision Details Card */}
           <div className="lg:col-span-7 bg-white border border-[#e4e2d8] rounded-2xl p-6 lg:p-7 flex flex-col justify-between shadow-xs">
             <div className="space-y-4">
@@ -129,10 +131,10 @@ export default function DashboardPage() {
 
             <div className="pt-6">
               <Link
-                href="/cases/TC-024/review"
+                href={DEMO_MODE ? "/cases/TC-024/review" : "/cases"}
                 className="btn-primary py-2.5 px-5 text-sm flex items-center gap-2 w-fit shadow-xs"
               >
-                <span>Review TC-024</span>
+                <span>Open investigations</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -142,7 +144,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-5 flex">
             <ExposureCard className="w-full" orderValue="₹4,80,000" />
           </div>
-        </div>
+        </div> : null}
 
         {/* Recent Investigations Table */}
         <div className="bg-white border border-[#e4e2d8] rounded-2xl shadow-xs overflow-hidden">
@@ -196,11 +198,11 @@ export default function DashboardPage() {
                         {item.supplier_name}
                       </p>
                       <p className="text-xs text-[#71717a]">
-                        ₹{(item.order_value_inr || 480000).toLocaleString("en-IN")}
+                        ₹{(item.order_value_inr != null ? item.order_value_inr.toLocaleString("en-IN") : "Not extracted")}
                       </p>
                     </td>
                     <td className="px-6 py-4">
-                      <StatusBadge status={item.status || "Draft"} />
+                      <StatusBadge status={item.status || "Not checked"} />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link

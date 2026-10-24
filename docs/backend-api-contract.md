@@ -1,7 +1,9 @@
 # Backend integration contract
 
-Branch: `Backend` (explicit current assignment). Repository audit: only README existed;
-there are no teammate modules or migrations to reuse yet.
+Integration branch: `integration/backend-supabase`; draft delivery PR targets `Backend`.
+The existing FastAPI implementation, Member 3's database layer and Member 2's frontend
+are preserved. The hosted schema has ten applied migrations; authenticated live workflow
+verification remains conditional on dedicated buyer/reviewer accounts.
 
 ## Execution milestones
 
@@ -11,7 +13,8 @@ there are no teammate modules or migrations to reuse yet.
 4. Source-linked comparison and Decimal exposure calculation.
 5. Authenticated orchestration routes, repository integration contract and workflow tests.
 
-P0 owns the executable workflow. P1 OCR, reports and durable queue infrastructure are deferred.
+P0 owns the executable workflow. OCR and durable queue infrastructure are deferred.
+The frontend exports a PDF snapshot of persisted findings; it is not a stored server report.
 Each milestone is tested and committed before proceeding.
 
 ## Persistence boundary

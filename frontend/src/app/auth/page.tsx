@@ -9,8 +9,8 @@ import { ArrowLeft, Check, AlertCircle, Loader2 } from "lucide-react";
 export default function AuthPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("aditi@example.in");
-  const [password, setPassword] = useState("••••••••••••");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [orgName, setOrgName] = useState("Ashwamedha Works");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,28 +25,13 @@ export default function AuthPage() {
       // Attempt Supabase live signin
       const { data, error: sbError } = await supabase.auth.signInWithPassword({
         email,
-        password: password.includes("•") ? "Password123!" : password,
+        password,
       });
 
-      if (sbError) {
-        // If Supabase credentials are placeholder or demo mode is active, allow demo session
-        console.warn("Supabase auth warning:", sbError.message);
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("tc_user_email", email);
-          window.localStorage.setItem("tc_user_role", "reviewer");
-          window.localStorage.setItem("tc_demo_mode", "true");
-        }
-      } else if (data.session) {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("tc_user_email", email);
-          window.localStorage.setItem("tc_demo_mode", "false");
-        }
-      }
-
-      setSuccessMsg("Authentication successful. Redirecting to workspace...");
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 500);
+      if (sbError) throw sbError;
+      if (!data.session) throw new Error("No authenticated session was returned.");
+      setSuccessMsg("Signed in. Opening workspace...");
+      router.push("/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to sign in";
       setError(msg);
@@ -61,31 +46,19 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const { error: sbError } = await supabase.auth.signUp({
+      const { data, error: sbError } = await supabase.auth.signUp({
         email,
-        password: password.includes("•") ? "Password123!" : password,
+        password,
         options: {
           data: {
             organization_name: orgName,
-            role: "reviewer",
           },
         },
       });
 
-      if (sbError) {
-        console.warn("Supabase signup warning:", sbError.message);
-      }
-
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("tc_user_email", email);
-        window.localStorage.setItem("tc_user_role", "reviewer");
-        window.localStorage.setItem("tc_org_name", orgName);
-      }
-
-      setSuccessMsg("Workspace configured! Entering procurement workspace...");
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 500);
+      if (sbError) throw sbError;
+      setSuccessMsg(data.session ? "Account created. An administrator must assign your organisation membership." : "Check your email to confirm your account. An administrator must assign your organisation membership.");
+      if (data.session) router.push("/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to create account";
       setError(msg);

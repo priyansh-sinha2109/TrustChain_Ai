@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 export default function CasesPage() {
+  const [error, setError] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "awaiting" | "progress" | "drafts">("all");
@@ -24,7 +25,7 @@ export default function CasesPage() {
         const data = await api.getCases();
         setCases(data);
       } catch (err) {
-        console.error("Failed to load cases", err);
+        setError(err instanceof Error ? err.message : "Unable to load investigations.");
       }
     }
     loadData();
@@ -53,6 +54,7 @@ export default function CasesPage() {
   return (
     <AppShell breadcrumb="Workspace / Investigations">
       <div className="space-y-6">
+        {error ? <p role="alert" className="text-red-700">{error}</p> : null}
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -195,11 +197,11 @@ export default function CasesPage() {
                         {item.supplier_name}
                       </p>
                       <p className="text-xs text-[#71717a]">
-                        ₹{(item.order_value_inr || 480000).toLocaleString("en-IN")}
+                        ₹{(item.order_value_inr != null ? item.order_value_inr.toLocaleString("en-IN") : "Not extracted")}
                       </p>
                     </td>
                     <td className="px-6 py-4">
-                      <StatusBadge status={item.status || "Draft"} />
+                      <StatusBadge status={item.status || "Not checked"} />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link

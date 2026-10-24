@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "./Logo";
 import {
   LayoutDashboard,
@@ -17,6 +17,10 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+import { supabase } from "@/lib/supabase";
+import { DEMO_MODE } from "@/lib/api";
+import { SyntheticBanner } from "./SyntheticBanner";
+
 interface AppShellProps {
   children: React.ReactNode;
   breadcrumb?: string;
@@ -25,6 +29,25 @@ interface AppShellProps {
 export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppShellProps) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const router = useRouter();
+  const [identity, setIdentity] = useState("");
+  const [authenticated, setAuthenticated] = useState(DEMO_MODE);
+  const caseId = pathname.match(/^\/cases\/([^/]+)/)?.[1];
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      if (!data.session) { router.replace("/auth"); return; }
+      setAuthenticated(true);
+      setIdentity(data.session.user.email || "Signed-in member");
+    }).catch(() => { if (mounted) router.replace("/auth"); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) router.replace("/auth");
+    });
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, [router]);
 
   const navItems = [
     {
@@ -41,14 +64,14 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
     },
     {
       label: "Human review",
-      href: "/cases/TC-024/review",
+      href: caseId && caseId !== "new" ? `/cases/${caseId}/review` : "/cases",
       icon: UserCheck,
-      badge: "01",
+      badge: undefined,
       active: pathname.includes("/review"),
     },
     {
       label: "Reports",
-      href: "/cases/TC-024/reports",
+      href: caseId && caseId !== "new" ? `/cases/${caseId}/reports` : "/cases",
       icon: FileBarChart,
       active: pathname.includes("/reports"),
     },
@@ -59,6 +82,8 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
       active: pathname === "/help",
     },
   ];
+
+  if (!authenticated) return <p role="status" className="p-8">Checking your session...</p>;
 
   return (
     <div className="min-h-screen bg-[#f7f6f2] flex flex-col lg:flex-row text-[#18181b]">
@@ -171,8 +196,8 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
               AM
             </div>
             <div className="text-xs leading-tight">
-              <p className="font-medium text-[#18181b]">Aditi Mehta</p>
-              <p className="text-[11px] text-[#71717a]">Procurement manager</p>
+              <p className="font-medium text-[#18181b]">{identity || "Illustrative workspace"}</p>
+              <p className="text-[11px] text-[#71717a]">Organisation member</p>
             </div>
           </div>
         </div>
@@ -213,6 +238,7 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
 
         {/* Dynamic page content */}
         <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto">
+          <SyntheticBanner />
           {children}
         </main>
 
