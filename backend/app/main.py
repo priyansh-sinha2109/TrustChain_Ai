@@ -1,4 +1,5 @@
 import importlib
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from uuid import uuid4
@@ -13,6 +14,8 @@ from .config import Settings
 from .errors import AppError
 from .models import User
 from .security import authenticate
+from .routes import router
+from .tinyfish import TinyFish
 
 
 def create_app(settings: Settings | None = None, repository=None) -> FastAPI:
@@ -30,6 +33,8 @@ def create_app(settings: Settings | None = None, repository=None) -> FastAPI:
                   openapi_url="/openapi.json" if settings.environment == "development" else None,
                   redoc_url=None)
     app.state.settings, app.state.repository = settings, repository
+    app.state.tinyfish = TinyFish(settings)
+    app.state.processing_slots = asyncio.Semaphore(2)
     app.add_middleware(CORSMiddleware, allow_origins=[settings.frontend_origin],
                        allow_methods=["GET", "POST"],
                        allow_headers=["Authorization", "Content-Type", "Idempotency-Key"])
@@ -71,6 +76,8 @@ def create_app(settings: Settings | None = None, repository=None) -> FastAPI:
     @app.get("/api/v1/me", response_model=User)
     async def me(user: User = Depends(authenticate)):
         return user
+
+    app.include_router(router)
 
     return app
 

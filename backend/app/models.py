@@ -123,6 +123,7 @@ class FindingsResponse(BaseModel):
     created_at: datetime
     investigation_status: str
     findings: list[Finding]
+    extracted_fields: list[SourceField] = Field(default_factory=list)
     advance_exposure: Exposure
     evidence: list[Evidence] = Field(default_factory=list)
 
