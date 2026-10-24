@@ -31,13 +31,18 @@ export function LiveCaseWorkspace({ id, view }: { id: string; view: View }) {
           let jobId = new URLSearchParams(window.location.search).get("job_id") || sessionStorage.getItem(`tc_job:${id}`);
           if (!jobId) jobId = (await api.getFindings(id)).job_id;
           const current = await api.getJob(jobId);
+          if (current.case_id !== id) throw new Error("This investigation belongs to a different case.");
           if (disposed) return;
           setJob(current);
           if (["QUEUED", "PROCESSING"].includes(current.status)) {
             timer = setTimeout(load, 3000);
             return;
           }
-          if (current.status !== "FAILED") setData(await api.getFindings(id));
+          if (current.status !== "FAILED") {
+            const saved = await api.getFindings(id);
+            if (saved.job_id !== current.id) throw new Error("A newer investigation is available. Open findings to view its results.");
+            if (!disposed) setData(saved);
+          }
         } else {
           const findings = await api.getFindings(id);
           const current = await api.getJob(findings.job_id);

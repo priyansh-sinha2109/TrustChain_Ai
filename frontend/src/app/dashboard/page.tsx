@@ -67,20 +67,20 @@ export default function DashboardPage() {
         {/* 3 Metric Cards matching Figma */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <StatCard
-            label="Total investigations"
+            label="Saved cases"
             value={totalCases}
-            subtext="Across this demo workspace"
+            subtext="Accessible purchasing cases"
           />
           <StatCard
             label="Awaiting human review"
-            value={awaitingReview}
-            subtext="A decision is still required"
+            value={DEMO_MODE ? awaitingReview : "—"}
+            subtext="Open a case for its latest job status"
             highlight
           />
           <StatCard
             label="In progress"
-            value={inProgress}
-            subtext="Comparison underway"
+            value={DEMO_MODE ? inProgress : "—"}
+            subtext="Progress is tracked per investigation"
           />
         </div>
 
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                         href={
                           item.id === "TC-024"
                             ? "/cases/TC-024/findings"
-                            : `/cases/${item.id}/progress`
+                            : `/cases/${item.id}/documents`
                         }
                         className="font-semibold text-[#18181b] hover:text-[#0d5e4b] flex items-center gap-1.5"
                       >
@@ -202,14 +202,14 @@ export default function DashboardPage() {
                       </p>
                     </td>
                     <td className="px-6 py-4">
-                      <StatusBadge status={item.status || "Not checked"} />
+                      <StatusBadge status={item.status || "Open case for status"} />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link
                         href={
                           item.id === "TC-024"
                             ? "/cases/TC-024/findings"
-                            : `/cases/${item.id}/progress`
+                            : `/cases/${item.id}/documents`
                         }
                         className="inline-flex items-center text-xs font-semibold text-[#0d5e4b] hover:underline"
                       >

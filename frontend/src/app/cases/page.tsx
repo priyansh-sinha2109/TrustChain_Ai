@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/ui/AppShell";
 import { StatusBadge } from "@/components/ui/Badge";
-import { api } from "@/lib/api";
+import { api, DEMO_MODE } from "@/lib/api";
 import { Case } from "@/types/api";
 import {
   Plus,
@@ -120,6 +120,7 @@ export default function CasesPage() {
             </button>
             <button
               type="button"
+              disabled={!DEMO_MODE}
               onClick={() => setTab("awaiting")}
               className={`px-3 py-1.5 rounded-md transition-colors ${
                 tab === "awaiting"
@@ -127,10 +128,11 @@ export default function CasesPage() {
                   : "text-gray-500 hover:text-black"
               }`}
             >
-              Awaiting review (1)
+              Awaiting review
             </button>
             <button
               type="button"
+              disabled={!DEMO_MODE}
               onClick={() => setTab("progress")}
               className={`px-3 py-1.5 rounded-md transition-colors ${
                 tab === "progress"
@@ -138,10 +140,11 @@ export default function CasesPage() {
                   : "text-gray-500 hover:text-black"
               }`}
             >
-              In progress (1)
+              In progress
             </button>
             <button
               type="button"
+              disabled={!DEMO_MODE}
               onClick={() => setTab("drafts")}
               className={`px-3 py-1.5 rounded-md transition-colors ${
                 tab === "drafts"
@@ -149,12 +152,12 @@ export default function CasesPage() {
                   : "text-gray-500 hover:text-black"
               }`}
             >
-              Drafts (1)
+              Drafts
             </button>
           </div>
 
           <p className="text-xs text-[#71717a]">
-            {filteredCases.length} illustrative records · Updated: newest first ↓
+            {filteredCases.length} accessible cases · Open a case for saved investigation status.
           </p>
 
           {/* Table */}
@@ -179,7 +182,7 @@ export default function CasesPage() {
                         href={
                           item.id === "TC-024"
                             ? "/cases/TC-024/findings"
-                            : `/cases/${item.id}/progress`
+                            : `/cases/${item.id}/documents`
                         }
                         className="font-semibold text-[#18181b] hover:text-[#0d5e4b]"
                       >
@@ -201,14 +204,14 @@ export default function CasesPage() {
                       </p>
                     </td>
                     <td className="px-6 py-4">
-                      <StatusBadge status={item.status || "Not checked"} />
+                      <StatusBadge status={item.status || "Open case for status"} />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link
                         href={
                           item.id === "TC-024"
                             ? "/cases/TC-024/findings"
-                            : `/cases/${item.id}/progress`
+                            : `/cases/${item.id}/documents`
                         }
                         className="inline-flex items-center text-xs font-semibold text-[#0d5e4b] hover:underline"
                       >

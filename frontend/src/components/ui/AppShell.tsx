@@ -33,7 +33,8 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
   const router = useRouter();
   const [identity, setIdentity] = useState("");
   const [authenticated, setAuthenticated] = useState(DEMO_MODE);
-  const caseId = pathname.match(/^\/cases\/([^/]+)/)?.[1];
+  const matchedCase = pathname.match(/^\/cases\/([^/]+)/)?.[1];
+  const caseId = matchedCase === "new" ? undefined : matchedCase;
   useEffect(() => {
     if (DEMO_MODE) return;
     let mounted = true;
@@ -133,7 +134,7 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
               Workspace
             </span>
             <div className="mt-1 flex items-center justify-between px-3 py-2 bg-[#f4f4f2] rounded-lg text-sm font-medium text-[#18181b] cursor-pointer hover:bg-[#eae8e0] transition-colors">
-              <span className="truncate">Ashwamedha Works</span>
+              <span className="truncate">{DEMO_MODE ? "Illustrative workspace" : "Your workspace"}</span>
               <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />
             </div>
           </div>
@@ -193,11 +194,11 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
 
           <div className="flex items-center gap-2.5 pt-1">
             <div className="w-7 h-7 rounded-full bg-[#0d5e4b] text-white flex items-center justify-center text-xs font-semibold">
-              AM
+              {identity ? identity.slice(0, 2).toUpperCase() : "TC"}
             </div>
             <div className="text-xs leading-tight">
               <p className="font-medium text-[#18181b]">{identity || "Illustrative workspace"}</p>
-              <p className="text-[11px] text-[#71717a]">Organisation member</p>
+              <p className="text-[11px] text-[#71717a]">Signed-in account</p>
             </div>
           </div>
         </div>

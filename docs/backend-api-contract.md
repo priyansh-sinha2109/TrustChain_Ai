@@ -122,6 +122,7 @@ Interactive models: `/docs`. Committed schema: `docs/backend-openapi.json`.
 | POST | `/api/v1/cases/{case_id}/documents/upload-intents` | Signed private upload target |
 | POST | `/api/v1/cases/{case_id}/documents/confirm` | Document registration |
 | GET | `/api/v1/cases/{case_id}/documents` | Document metadata |
+| GET | `/api/v1/cases/{case_id}/documents/{document_id}/content` | Authorised private PDF bytes; no-store, never a public object URL |
 | POST | `/api/v1/cases/{case_id}/investigations` | 202 with job ID and poll URL |
 | GET | `/api/v1/jobs/{job_id}` | Persisted job state |
 | POST | `/api/v1/jobs/{job_id}/resume` | Resume queued/interrupted job |
