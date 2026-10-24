@@ -7,6 +7,16 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
+class ErrorDetail(BaseModel):
+    code: str
+    message: str
+    request_id: str
+
+
+class ErrorEnvelope(BaseModel):
+    error: ErrorDetail
+
+
 class DocumentType(StrEnum):
     RFQ = "RFQ"
     ACCEPTED_QUOTE = "ACCEPTED_QUOTE"
@@ -16,6 +26,18 @@ class DocumentType(StrEnum):
 
 class User(BaseModel):
     id: UUID
+
+
+class WorkspaceCreate(BaseModel):
+    model_config = {"extra": "forbid", "str_strip_whitespace": True}
+    organization_name: str = Field(min_length=1, max_length=200)
+
+
+class Membership(BaseModel):
+    user_id: UUID
+    org_id: UUID
+    organization_name: str
+    role: Literal["buyer", "reviewer", "admin"]
 
 
 class CaseCreate(BaseModel):
@@ -46,6 +68,10 @@ class UploadIntent(BaseModel):
 
 class UploadConfirm(BaseModel):
     document_id: UUID
+
+
+class DocumentApproval(BaseModel):
+    note: str = Field(min_length=1, max_length=2000)
 
 
 class UploadTarget(BaseModel):
@@ -98,6 +124,8 @@ class Job(BaseModel):
     request: InvestigationStart
     provider_run_id: str | None = None
     error_code: str | None = None
+    provider_status: Literal["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] | None = None
+    provider_finished_at: datetime | None = None
 
 
 class JobAccepted(BaseModel):

@@ -2,12 +2,14 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Request
+from fastapi.responses import Response
 
 from .comparison import validate_baseline
 from .errors import AppError
 from .investigation import Investigator
 from .models import (Case, CaseCreate, Document, FindingsResponse, InvestigationStart,
                      Job, JobAccepted, Review, UploadConfirm, UploadIntent, UploadTarget, User, Evidence)
+from .models import DocumentApproval, Membership, WorkspaceCreate
 from .security import authenticate
 
 router = APIRouter(prefix="/api/v1", dependencies=[Depends(authenticate)])
@@ -22,6 +24,16 @@ def repository(request: Request):
 
 
 Repo = Annotated[object, Depends(repository)]
+
+
+@router.get("/membership", response_model=Membership)
+async def membership(user: CurrentUser, repo: Repo):
+    return await repo.get_membership(user.id)
+
+
+@router.post("/onboarding/workspace", response_model=Membership)
+async def create_workspace(data: WorkspaceCreate, user: CurrentUser, repo: Repo):
+    return await repo.create_workspace(user.id, data)
 
 
 def investigator(request: Request, repo):
@@ -59,6 +71,24 @@ async def confirm(case_id: UUID, data: UploadConfirm, user: CurrentUser, repo: R
 async def documents(case_id: UUID, user: CurrentUser, repo: Repo):
     await repo.get_case(user.id, case_id)
     return await repo.list_documents(user.id, case_id)
+
+
+@router.post("/cases/{case_id}/documents/{document_id}/approval", response_model=Document)
+async def approve_document(case_id: UUID, document_id: UUID, data: DocumentApproval, user: CurrentUser, repo: Repo):
+    await repo.get_case(user.id, case_id)
+    if not hasattr(repo, "approve_document"):
+        raise AppError("APPROVAL_UNAVAILABLE", "Document approval is not supported by the configured adapter.", 503)
+    return await repo.approve_document(user.id, case_id, document_id, data.note)
+
+
+@router.get("/cases/{case_id}/documents/{document_id}/content", response_class=Response,
+            responses={200: {"content": {"application/pdf": {}}}})
+async def document_content(case_id: UUID, document_id: UUID, user: CurrentUser, repo: Repo):
+    await repo.get_case(user.id, case_id)
+    _, content = await repo.document_bytes(user.id, case_id, document_id)
+    return Response(content, media_type="application/pdf", headers={
+        "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": 'inline; filename="purchase-document.pdf"'})
 
 
 @router.post("/cases/{case_id}/investigations", response_model=JobAccepted, status_code=202)

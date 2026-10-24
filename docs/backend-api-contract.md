@@ -1,7 +1,9 @@
 # Backend integration contract
 
-Branch: `Backend` (explicit current assignment). Repository audit: only README existed;
-there are no teammate modules or migrations to reuse yet.
+Integration branch: `integration/backend-supabase`; draft delivery PR targets `Backend`.
+The existing FastAPI implementation, Member 3's database layer and Member 2's frontend
+are preserved. The hosted schema has ten applied migrations; authenticated live workflow
+verification remains conditional on dedicated buyer/reviewer accounts.
 
 ## Execution milestones
 
@@ -11,14 +13,16 @@ there are no teammate modules or migrations to reuse yet.
 4. Source-linked comparison and Decimal exposure calculation.
 5. Authenticated orchestration routes, repository integration contract and workflow tests.
 
-P0 owns the executable workflow. P1 OCR, reports and durable queue infrastructure are deferred.
+P0 owns the executable workflow. OCR and durable queue infrastructure are deferred.
+The frontend exports a PDF snapshot of persisted findings; it is not a stored server report.
 Each milestone is tested and committed before proceeding.
 
 ## Persistence boundary
 
-Member 3 implements `app.repository.Repository` and an async factory configured through
-`REPOSITORY_FACTORY=package.module:create_repository`. No database schemas are assumed.
-Missing persistence returns 503; test doubles are never wired into production.
+The integration adapter implements `app.repository.Repository`. Configure
+`REPOSITORY_FACTORY=app.supabase_adapter:create_repository`. It reuses Member 3's
+SupabaseRepository and existing procurement tables with a transactional SQL bridge.
+Missing configuration fails explicitly; test doubles are never wired into production.
 All repository methods MUST authorize the verified user against organisation membership,
 case ownership and role before accessing data, including job reads and document downloads.
 Never trust caller-supplied organisation identifiers. Auth uses Supabase `/auth/v1/user`
@@ -35,6 +39,15 @@ Pydantic contract and `repository.py` is the teammate adapter boundary.
 `GET /api/v1/me` returns only the verified user ID. Missing tokens return 401;
 unconfigured or unavailable authentication returns 503. Responses never echo token text.
 
+`GET /api/v1/membership` resolves exactly one active server-side membership and returns
+user_id, org_id, organization_name and role; absent or ambiguous membership returns 403.
+`POST /api/v1/onboarding/workspace` accepts only `{organization_name: string}` (1–200
+trimmed characters). A confirmed user with no membership can explicitly create a new
+tenant as buyer. It never joins a tenant by name or accepts a client role/org_id. Existing
+memberships are returned unchanged; inactive/ambiguous memberships are rejected.
+Provisioning, buyer membership and audit event are one transaction, serialised per user.
+Reviewer/admin assignment remains an authorised administrative operation.
+
 From the repository root on Windows:
 
 Use Python 3.11 or newer; this workspace was verified with Python 3.14.8.
@@ -48,8 +61,10 @@ python -m venv .venv
 ```
 
 Copy `backend/.env.example` to `backend/.env` and set the project URL and anon key.
-The anon key is used only to contact Auth; privileged server keys are not needed by
-this backend contract. Member 3 owns private Storage access and database credentials.
+The anon key contacts Auth. The integrated adapter also requires DATABASE_URL and
+SUPABASE_SERVICE_ROLE_KEY for PostgreSQL transactions and real private Storage signing.
+These values stay server-side. .env is ignored and is resolved relative to the project
+root, independent of the shell's current directory. Use the root for all commands below.
 
 ## TinyFish module guide
 
@@ -59,7 +74,7 @@ POST `/v1/automation/run-async` returns a run ID; GET `/v1/runs/{id}` retrieves 
 There is no user-supplied goal: only an approved public URL leaves the backend.
 Provider payloads and errors are not passed verbatim to the frontend.
 
-Set `TINYFISH_API_KEY` privately and run from `backend`: `python -m scripts.tinyfish_smoke`.
+Set `TINYFISH_API_KEY` privately and run the root-level smoke command documented below.
 The script prints real run state and validated source observations, never credentials.
 Tests in `test_tinyfish.py` use mocked HTTP, not a live provider account.
 
@@ -116,6 +131,7 @@ Interactive models: `/docs`. Committed schema: `docs/backend-openapi.json`.
 | POST | `/api/v1/cases/{case_id}/documents/upload-intents` | Signed private upload target |
 | POST | `/api/v1/cases/{case_id}/documents/confirm` | Document registration |
 | GET | `/api/v1/cases/{case_id}/documents` | Document metadata |
+| GET | `/api/v1/cases/{case_id}/documents/{document_id}/content` | Authorised private PDF bytes; no-store, never a public object URL |
 | POST | `/api/v1/cases/{case_id}/investigations` | 202 with job ID and poll URL |
 | GET | `/api/v1/jobs/{job_id}` | Persisted job state |
 | POST | `/api/v1/jobs/{job_id}/resume` | Resume queued/interrupted job |
@@ -207,3 +223,68 @@ Tests use synthetic PDFs, mocked HTTP/Auth and a test-only in-memory repository.
 cannot establish live Supabase persistence, RLS, reviewer roles, signed upload behavior
 or live TinyFish success. Run the smoke command with a key and then verify the full
 frontend-to-Supabase workflow against Member 3's adapter before marking integration ready.
+
+## Integrated Supabase adapter (current implementation)
+
+The adapter is implemented in `backend/app/supabase_adapter.py`; the earlier contract
+requirements above are now implemented using the teammate's repository inside real SQL
+transactions. Four bounded worker threads handle synchronous SQL/Storage calls. Each
+operation resolves exactly one active database membership and verifies its role and
+case organisation. Caller-supplied organisation/role values are never trusted. Missing,
+revoked, unknown-role or multiple active memberships return 403. Reviewer/admin authority
+is required for approvals and human decisions; buyer/admin authority is required for
+case creation, upload and investigation processing.
+
+Configure DATABASE_URL using Supabase Connect -> Session pooler and the existing database
+password. The API service-role key is not a database password. Use a trusted backend-only
+SQL login; it may bypass RLS, so explicit adapter authorization runs for every operation.
+No code automatically applies migrations at startup. Follow the migration coordination
+notes in `docs/database/INTEGRATION_MIGRATIONS.md`.
+
+New additive endpoint:
+`POST /api/v1/cases/{case_id}/documents/{document_id}/approval`
+with `{"note":"Accepted purchasing baseline reviewed."}`. It returns the existing Document
+shape with approved=true only after reviewer authorization, confirmed-object hash checking,
+and immutable approval/audit insertion. Upload confirmation always returns approved=false
+until this independent action occurs. Approval is not payment approval.
+
+Signed upload URLs are produced by actual Supabase Storage requests, not constructed
+placeholder tokens. Supabase gives uploads a fixed two-hour lifetime; send the raw PDF via
+PUT to upload_url with Content-Type: application/pdf. The returned expires_at is the
+reservation expiry. No apikey/service-role header is needed by the browser for this URL.
+Confirmation verifies canonical association, object existence, streamed 10,000,000-byte
+limit, exact reserved length, MIME, actual PDF parsing and SHA256 before registration.
+Signed downloads are requested from Supabase for a 60-second read and never sent to TinyFish.
+Bucket case-documents is private. Storage RLS additionally checks case existence and the
+matching upload reservation; an org prefix alone does not authorize an arbitrary case path.
+
+Document mapping: doc_type -> document_type, file_size -> size_bytes, mime_type ->
+content_type; approved is derived from immutable document_approvals tied to the registered
+SHA256. Cases join exactly one primary supplier via case_suppliers. INFO/WARNING/HIGH maps
+to database LOW/MEDIUM/HIGH. Comparison status stays in findings.details.comparison_status;
+database status OPEN is a separate human-review workflow. Unknown financial impact is SQL
+NULL, not zero. Missing deal-version totals/percentages stay NULL, not Decimal zero.
+
+Human decisions map APPROVE -> APPROVE_ADVANCE, REJECT -> REJECT_PAYMENT and
+REQUEST_CLARIFICATION -> REQUEST_SUPPLIER_CLARIFICATION. Actual provider CANCELLED is
+preserved in the job/provider metadata; Member 3's narrower research enum uses FAILED
+for that terminal state. Provider finish times are populated only from provider data.
+Job JSON adds nullable provider_status and provider_finished_at fields; existing fields
+and route names are unchanged. Generated frontend DTOs: `docs/backend-api-types.ts`.
+Regenerate OpenAPI from the app, then `python -m scripts.export_api_types` with PYTHONPATH=backend.
+The OpenAPI error models now describe the actual safe error envelope, including 422.
+
+Jobs are stored in investigation_jobs. Per-case SQL locks plus unique constraints make
+idempotency atomic. Claiming sets a five-minute lease and unique fencing token; processing
+stage updates renew the lease. Late writes from a replaced worker fail with LEASE_LOST.
+Immutable provisional/terminal JSON snapshots retain a single job's complete response;
+terminal snapshots, evidence, source claims, deal versions, findings, changes, exposure
+and terminal job association commit in one PostgreSQL transaction. Replaying the identical
+terminal result is safe; replacing it is rejected. Reviews and their audit events commit
+with REVIEWED status. Findings responses retain the snapshot's processing status; poll the
+job for its subsequent human-review status. BackgroundTasks still do not guarantee execution
+across restarts. Explicit resume is supported after a lease expires; no scheduler is implied.
+
+For root-level script commands in PowerShell, first set `$env:PYTHONPATH = 'backend'`, then
+use `.\.venv\Scripts\python.exe -m scripts.verify_supabase` or
+`.\.venv\Scripts\python.exe -m scripts.tinyfish_smoke`.

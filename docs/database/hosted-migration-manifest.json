@@ -1,0 +1,42 @@
+[
+  {
+    "file": "20261024000001_core_procurement_schema.sql",
+    "sha256": "6ea2fcf17aaf9a1f899b2d36b8c1da79d7f449eeae59f42b3d38a83de82b76e0"
+  },
+  {
+    "file": "20261024000002_evidence_and_usp_layer.sql",
+    "sha256": "c4e81466154e402ae514026f3fb2155589e304c73dc056c5d16901b651b8a30c"
+  },
+  {
+    "file": "20261024000003_storage_policies.sql",
+    "sha256": "885f7917d80abad577fdd8dc32ae9c14453f798fd8ae15c40f247a56d91e3817"
+  },
+  {
+    "file": "20261024000004_active_memberships.sql",
+    "sha256": "0a8b58b43843edc8c8f0f971ee11b156a22d33cd4a5547795d28717770cb41c2"
+  },
+  {
+    "file": "20261024000005_persistent_investigations.sql",
+    "sha256": "0c846562a1f413501b7897d53867aaad215dc291e0c966e22b2f9db409873f5a"
+  },
+  {
+    "file": "20261024000006_private_upload_reservations.sql",
+    "sha256": "3fbdcb5c967bfc05adf881dfb55844ac76d1a30ddc5a09cc5310ffdf4f0942a3"
+  },
+  {
+    "file": "20261024000007_document_approvals.sql",
+    "sha256": "bdcea2900fd6fcb49d5e3c5353bd7ad2c43a4a55ffdc6cc7c3a69ff1d856f197"
+  },
+  {
+    "file": "20261024000008_provider_state.sql",
+    "sha256": "18747735b0081fd9bc1dcfdf91bf4db4e44e6ebe0898d443b33d3a3240ca4a5f"
+  },
+  {
+    "file": "20261024000009_storage_case_associations.sql",
+    "sha256": "824611546db7cb93ef76ec757b3d2e3877886aecdf6c72e0629c0e9bf56470a5"
+  },
+  {
+    "file": "20261024000010_currency_and_rounding.sql",
+    "sha256": "cf07e1324370c88c5cd42a68ff0e3309f38a45682ec63b6ba677c1eb51a89caf"
+  }
+]

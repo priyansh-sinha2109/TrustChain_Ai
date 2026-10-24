@@ -172,3 +172,37 @@ def test_committed_openapi_matches_application():
     from pathlib import Path
     schema = Path(__file__).resolve().parents[2] / "docs" / "backend-openapi.json"
     assert json.loads(schema.read_text(encoding="utf-8")) == create_app(Settings(_env_file=None)).openapi()
+
+
+def test_explicit_approval_endpoint_delegates_with_verified_identity(setup):
+    app, repo, case_id, data = setup
+    document = next(iter(repo.docs.values()))[0]
+    repo.approve_document = AsyncMock(return_value=document)
+    with TestClient(app) as client:
+        response = client.post(f"/api/v1/cases/{case_id}/documents/{document.id}/approval",
+            json={"note": "Engineering accepted the purchasing baseline."})
+        assert response.status_code == 200
+    repo.approve_document.assert_awaited_once_with(repo.owner, case_id, document.id,
+        "Engineering accepted the purchasing baseline.")
+
+
+async def test_stale_worker_stops_without_marking_replacement_failed(setup):
+    from app.investigation import Investigator
+    from app.models import InvestigationStart
+    app,repo,case_id,data=setup
+    job,_=await repo.create_job(repo.owner,case_id,"stale-worker",InvestigationStart(**data))
+    repo.update_job=AsyncMock(side_effect=AppError("LEASE_LOST","A replacement owns the job",409))
+    await Investigator(repo,app.state.tinyfish,app.state.processing_slots).execute(repo.owner,job.id)
+    assert repo.update_job.await_count==1
+
+
+def test_private_pdf_preview_uses_authorized_bytes_and_disables_caching(setup):
+    app,repo,case_id,data=setup
+    document,content=next(iter(repo.docs.values()))
+    with TestClient(app) as client:
+        response=client.get(f"/api/v1/cases/{case_id}/documents/{document.id}/content")
+        assert response.status_code==200 and response.content==content
+        assert response.headers["content-type"]=="application/pdf"
+        assert response.headers["cache-control"]=="private, no-store"
+        app.dependency_overrides[authenticate]=lambda:User(id=uuid4())
+        assert client.get(f"/api/v1/cases/{case_id}/documents/{document.id}/content").status_code==404
