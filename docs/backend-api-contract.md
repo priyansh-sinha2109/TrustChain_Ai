@@ -83,3 +83,18 @@ Clean `Label: value` PDFs are the P0 format. Labelled part numbers start item se
 repeated/conflicting values remain separate evidence. Complex tables, implicit item
 associations and OCR are unsupported. Place `Part number` before item specifications.
 Run `test_documents.py` for actual parser subprocess tests and normalization checks.
+
+## Comparison and finance module guide
+
+`comparison.py` accepts only approved quotes/orders as baseline and a separate final PI
+in the same case. RFQs are traceability inputs, never accepted terms. It checks thickness,
+grade, part number, quantity, total, advance percentage, delivery and freight. Exact
+item identities scope technical comparisons. Missing, ambiguous and unsupported values
+remain unresolved. Severity is deterministic: thickness/grade/part/advance conflicts
+are HIGH, other conflicts or unresolved findings WARNING, matches INFO.
+
+`financial.py` uses Decimal and rounds each advance to 2 decimals with ROUND_HALF_UP.
+Each document uses its own total. Explicit advance amounts can be used without a
+percentage; disagreement with a calculable advance is AMBIGUOUS. Missing currency,
+missing values and currency mismatch produce no invented conversion or difference.
+Run `test_comparison.py` and `test_financial.py`; all examples are synthetic.
