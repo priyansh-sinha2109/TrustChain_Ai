@@ -67,3 +67,19 @@ discarded. The remote browser owns redirects and DNS resolution: the local backe
 cannot enforce network isolation inside TinyFish. The fixed goal forbids navigation,
 but provider-level redirect/DNS enforcement remains an external dependency; do not
 describe the allowlist as a complete provider-browser SSRF guarantee.
+
+## Extraction module guide
+
+`extraction.py` reads authorized bytes supplied by the repository, validates PDF magic,
+MIME and exact size, and launches `pdf_worker.py` with a 20-second process timeout.
+Limits: 10 MB, 40 pages, 50,000 characters per page, 200,000 total extracted characters.
+The process isolates crashes/timeouts; OS-level memory quotas remain a deployment task.
+Blank pages cause `OCR_REQUIRED`; corrupt/encrypted/over-limit PDFs fail explicitly.
+
+`normalization.py` supports mm/cm/m, days/weeks, percentages, INR/USD/EUR/GBP,
+Indian grouping, quantities and explicit freight included/excluded. Decimal values
+remain strings in field records. Unsupported labels/units are never guessed.
+Clean `Label: value` PDFs are the P0 format. Labelled part numbers start item sections;
+repeated/conflicting values remain separate evidence. Complex tables, implicit item
+associations and OCR are unsupported. Place `Part number` before item specifications.
+Run `test_documents.py` for actual parser subprocess tests and normalization checks.
