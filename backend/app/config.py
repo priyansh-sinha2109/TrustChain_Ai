@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
     supabase_url: str = ""
     supabase_anon_key: SecretStr = SecretStr("")
+    supabase_service_role_key: SecretStr = SecretStr("")
+    database_url: SecretStr = SecretStr("")
     tinyfish_api_key: SecretStr = SecretStr("")
     repository_factory: str = ""
     public_research_hosts: str = "example.com"

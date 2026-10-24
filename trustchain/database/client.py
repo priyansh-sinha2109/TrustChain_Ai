@@ -55,8 +55,7 @@ class SupabaseRestClient:
     def post(self, table: str, payload: Dict[str, Any], use_service_key: bool = True) -> Dict[str, Any]:
         """Performs HTTP POST /rest/v1/{table}."""
         if not self.config.is_configured:
-            # If not configured (e.g. offline testing), return synthetic confirmation
-            return payload
+            raise RuntimeError("Supabase is not configured.")
 
         url = f"{self.config.supabase_url}/rest/v1/{table}"
         data = json.dumps(payload).encode("utf-8")
@@ -73,7 +72,7 @@ class SupabaseRestClient:
     def get(self, table: str, query_params: Optional[Dict[str, str]] = None, use_service_key: bool = True) -> Any:
         """Performs HTTP GET /rest/v1/{table}?{query}."""
         if not self.config.is_configured:
-            return []
+            raise RuntimeError("Supabase is not configured.")
 
         url = f"{self.config.supabase_url}/rest/v1/{table}"
         if query_params:

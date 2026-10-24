@@ -61,7 +61,9 @@ class SupabaseRepository:
         in_memory_mode: bool = False,
     ):
         self.client = client or SupabaseRestClient()
-        self.in_memory_mode = in_memory_mode or not self.client.config.is_configured
+        if not in_memory_mode and not self.client.config.is_configured:
+            raise RuntimeError("Supabase is not configured; explicit test-only memory mode is required.")
+        self.in_memory_mode = in_memory_mode
 
         # In-memory storage tables for deterministic offline testing
         self._orgs: Dict[uuid.UUID, Organization] = {}

@@ -27,6 +27,8 @@ def create_app(settings: Settings | None = None, repository=None) -> FastAPI:
             module, name = settings.repository_factory.split(":", 1)
             app.state.repository = await getattr(importlib.import_module(module), name)(settings)
         yield
+        if app.state.repository is not None and hasattr(app.state.repository, "close"):
+            await app.state.repository.close()
 
     app = FastAPI(title="TrustChain AI", version="0.1.0", lifespan=lifespan,
                   docs_url="/docs" if settings.environment == "development" else None,
