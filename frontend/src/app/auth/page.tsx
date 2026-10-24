@@ -95,8 +95,8 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-white">
       {/* Left Column: Forest Green Brand Hero Panel */}
-      <div className="lg:col-span-5 bg-[#0e382f] text-white p-8 lg:p-14 flex flex-col justify-between">
-        <div className="space-y-12">
+      <div className="lg:col-span-5 bg-[#0e382f] text-white p-5 sm:p-8 lg:p-14 flex flex-col justify-between">
+        <div className="space-y-6 lg:space-y-12">
           {/* Logo with white text */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[#10b981]">
@@ -118,7 +118,7 @@ export default function AuthPage() {
             </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="hidden lg:block space-y-4">
             <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
               The Last Check <br />
               Before You Pay.
@@ -128,7 +128,7 @@ export default function AuthPage() {
             </p>
           </div>
 
-          <div className="pt-4 space-y-3">
+          <div className="hidden lg:block pt-4 space-y-3">
             <div className="text-3xl font-bold text-[#6ee7b7]">
               30% → 80%
             </div>
@@ -139,14 +139,14 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="pt-8 text-xs text-gray-400 border-t border-emerald-900/40">
+        <div className="hidden lg:block pt-8 text-xs text-gray-400 border-t border-emerald-900/40">
           Illustrative example · Human review required. <br />
           Built by Team Ashwamedha.
         </div>
       </div>
 
       {/* Right Column: Authentication Form */}
-      <div className="lg:col-span-7 bg-[#f7f6f2] p-8 lg:p-14 flex flex-col justify-between">
+      <div className="lg:col-span-7 bg-[#f7f6f2] p-6 sm:p-8 lg:p-14 flex flex-col justify-between">
         <div className="max-w-md w-full mx-auto space-y-8">
           {/* Back link */}
           <Link
@@ -223,10 +223,11 @@ export default function AuthPage() {
           >
             {tab === "signup" && (
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">
+                <label htmlFor="organization" className="text-xs font-medium text-gray-700">
                   Organisation name
                 </label>
                 <input
+                  id="organization" autoComplete="organization"
                   type="text"
                   required
                   value={orgName}
@@ -238,10 +239,11 @@ export default function AuthPage() {
             )}
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-700">
+              <label htmlFor="email" className="text-xs font-medium text-gray-700">
                 Work email
               </label>
               <input
+                id="email" autoComplete="email"
                 type="email"
                 required
                 value={email}
@@ -252,10 +254,11 @@ export default function AuthPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-700">
+              <label htmlFor="password" className="text-xs font-medium text-gray-700">
                 Password
               </label>
               <input
+                id="password" autoComplete={tab === "login" ? "current-password" : "new-password"}
                 type="password"
                 required
                 value={password}

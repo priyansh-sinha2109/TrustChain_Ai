@@ -17,7 +17,7 @@ export function Logo({
   const content = (
     <div className={`flex items-center gap-2.5 ${className}`}>
       {/* Exact emerald shield icon matching Figma design */}
-      <div className="w-8 h-8 rounded-lg bg-[#0e382f] flex items-center justify-center text-[#10b981] shadow-sm">
+      <div className="w-8 h-8 shrink-0 rounded-lg bg-[#0e382f] flex items-center justify-center text-[#10b981] shadow-sm">
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -33,7 +33,7 @@ export function Logo({
       </div>
       {showText && (
         <span
-          className={`font-semibold tracking-tight text-[#18181b] ${
+          className={`whitespace-nowrap font-semibold tracking-tight text-[#18181b] ${
             textSize === "lg"
               ? "text-xl"
               : textSize === "sm"

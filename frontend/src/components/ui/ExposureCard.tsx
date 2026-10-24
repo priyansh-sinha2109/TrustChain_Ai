@@ -31,16 +31,16 @@ export function ExposureCard({
         <p className="text-xs uppercase tracking-wider text-[#6ee7b7] font-medium mb-3">
           Additional advance exposure
         </p>
-        <div className="text-4xl lg:text-5xl font-bold tracking-tight text-white mb-4">
+        <div className="text-3xl xl:text-4xl break-words tabular-nums font-bold tracking-tight text-white mb-4">
           {difference}
         </div>
 
         <div className="space-y-1.5 text-sm text-gray-200 border-t border-emerald-900/60 pt-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <span className="text-gray-300">{baselinePercent == null ? "Accepted advance" : `${baselinePercent}% agreed`}</span>
             <span className="font-medium text-white">{baselineAmount}</span>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <span className="text-gray-300">{finalPercent == null ? "Final advance" : `${finalPercent}% proposed`}</span>
             <span className="font-medium text-[#fca5a5]">{finalAmount}</span>
           </div>

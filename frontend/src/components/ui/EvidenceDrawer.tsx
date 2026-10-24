@@ -20,7 +20,7 @@ export function EvidenceDrawer({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-xs flex justify-end">
-      <div className="bg-[#f7f6f2] w-full max-w-3xl min-h-full p-6 lg:p-8 flex flex-col justify-between shadow-2xl border-l border-[#e4e2d8] animate-in slide-in-from-right duration-200">
+      <div className="bg-[#f7f6f2] w-full min-w-0 max-w-3xl min-h-full break-words p-6 lg:p-8 flex flex-col justify-between shadow-2xl border-l border-[#e4e2d8] ">
         <div className="space-y-6">
           {/* Drawer Header */}
           <div className="flex items-start justify-between border-b border-[#e4e2d8] pb-4">

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source("../");
 
 @theme {
   --color-brand-forest: #0e382f;
@@ -41,6 +41,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@layer components {
 /* Custom UI Kit controls matching Figma */
 .btn-primary {
   display: inline-flex;
@@ -106,4 +107,38 @@ body {
 *:focus-visible {
   outline: 2px solid #0d5e4b;
   outline-offset: 2px;
+}
+
+}
+
+/* Keep shared defaults below page utilities in Tailwind's cascade. */
+@layer base {
+  html { scrollbar-gutter: stable; scroll-behavior: smooth; }
+  body { margin: 0; }
+  button, input, select, textarea { font: inherit; }
+  button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  input[type="checkbox"], input[type="radio"] { accent-color: #0d5e4b; flex-shrink: 0; }
+  input::placeholder, textarea::placeholder { color: #71717a; opacity: 1; }
+  ::selection { background: #a7f3d0; color: #0a2e26; }
+}
+@layer components {
+  .workspace-content { min-width: 0; overflow-wrap: anywhere; }
+  .workspace-content :where(.grid) > * { min-width: 0; }
+  .workspace-content table { overflow-wrap: normal; }
+  .workspace-content th { white-space: nowrap; }
+  .field-control {
+    display: block; width: 100%; min-width: 0; margin-top: .5rem;
+    border: 1px solid #dcd9ce; border-radius: .5rem; background: white;
+    padding: .75rem 1rem; color: #18181b; font-size: .875rem; line-height: 1.5;
+  }
+  .case-tabs { display: flex; gap: .375rem; overflow-x: auto; padding: .5rem; background: white; border: 1px solid #e4e2d8; border-radius: .875rem; }
+  .case-tabs a { flex-shrink: 0; padding: .625rem .875rem; border-radius: .5rem; text-transform: capitalize; color: #52525b; font-size: .875rem; font-weight: 600; }
+  .case-tabs a:hover { background: #f7f6f2; color: #0d5e4b; }
+  .case-tabs a[aria-current="page"] { background: #ecfdf5; color: #065f46; }
+  .btn-primary, .btn-secondary { min-height: 2.75rem; line-height: 1.4; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

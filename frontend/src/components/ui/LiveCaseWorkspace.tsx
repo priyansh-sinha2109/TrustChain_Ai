@@ -121,13 +121,13 @@ export function LiveCaseWorkspace({ id, view }: { id: string; view: View }) {
   const conflicts = findings.filter(item => item.status === "CONFLICT").length;
   return <AppShell breadcrumb={`Workspace / ${view}`}>
     <div className="max-w-6xl mx-auto space-y-6">
-      <header className="space-y-2"><p className="text-xs text-gray-500">Investigation / {id}</p>
+      <header className="space-y-2"><p className="text-xs text-gray-500 break-all">Investigation / {id}</p>
         <h1 className="text-3xl font-extrabold">{view === "progress" ? "Your check is taking shape." : view === "review" ? "The decision stays with you." : view === "reports" ? "A review you can take with you." : "See exactly where it changed."}</h1>
         <p className="text-gray-600">{purchase ? `${purchase.title} · ${purchase.supplier_name}` : "Loading case..."}</p>
       </header>
       {error ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</p> : null}
-      <nav className="flex flex-wrap gap-4 text-sm text-[#0d5e4b]">
-        {(["documents", "progress", "findings", "evidence", "review", "reports"] as const).map(section => <Link key={section} href={`/cases/${id}/${section}`}>{section}</Link>)}
+      <nav aria-label="Case sections" className="case-tabs">
+        {(["documents", "progress", "findings", "evidence", "review", "reports"] as const).map(section => <Link aria-current={view === section ? "page" : undefined} key={section} href={`/cases/${id}/${section}`}>{section}</Link>)}
       </nav>
       {job ? <section className="card-surface p-6 space-y-2" aria-live="polite">
         <h2 className="text-lg font-bold">{job.status}</h2><p>Stage: {job.stage}</p>
@@ -150,9 +150,9 @@ export function LiveCaseWorkspace({ id, view }: { id: string; view: View }) {
       </div> : null}
       {view === "review" && data ? <form onSubmit={recordReview} className="card-surface p-6 space-y-4">
         <h2 className="text-xl font-bold">Record human review</h2>
-        <label className="block">Decision<select aria-label="Decision" value={decision} onChange={e => setDecision(e.target.value as ReviewDecision)} className="block border p-2 rounded-lg">
+        <label className="block">Decision<select aria-label="Decision" value={decision} onChange={e => setDecision(e.target.value as ReviewDecision)} className="field-control">
           <option value="REQUEST_CLARIFICATION">Request clarification</option><option value="APPROVE">Approve</option><option value="REJECT">Reject</option></select></label>
-        <label className="block">Review comment<textarea aria-label="Review comment" required maxLength={2000} value={comment} onChange={e => setComment(e.target.value)} className="block w-full border p-3 rounded-lg" /></label>
+        <label className="block">Review comment<textarea aria-label="Review comment" required maxLength={2000} value={comment} onChange={e => setComment(e.target.value)} className="field-control min-h-32" /></label>
         <p className="text-sm text-gray-600">Reviewer permissions are checked by the server. This records a review and does not release funds.</p>
         <button className="btn-primary" disabled={busy || !comment.trim() || !job || !["REVIEW_READY", "PARTIAL_REVIEW"].includes(job.status)}>Record decision</button>
         {recorded ? <p role="status">Decision recorded: {recorded}</p> : job?.status === "REVIEWED" ? <p>This investigation has already been reviewed.</p> : null}
@@ -163,8 +163,8 @@ export function LiveCaseWorkspace({ id, view }: { id: string; view: View }) {
 }
 
 function FindingSources({ finding, openSource }: { finding: Finding; openSource: (id: string) => Promise<void> }) {
-  return <article className="border-b border-[#e4e2d8] pb-4 space-y-2">
-    <h3 className="font-bold">{finding.field_key.replace(/_/g, " ")} · {finding.status}</h3><p className="text-sm">{finding.explanation}</p>
+  return <article className="border border-[#e4e2d8] rounded-xl p-4 space-y-3">
+    <h3 className="font-bold capitalize">{finding.field_key.replace(/_/g, " ")} · {finding.status}</h3><p className="text-sm">{finding.explanation}</p>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {([['Accepted', finding.baseline], ['Final', finding.final]] as const).map(([label, fields]) => <div key={label} className="rounded-lg bg-[#f7f6f2] p-3 text-sm">
         <h4 className="font-semibold">{label}</h4>{fields?.length ? fields.map((field, index) => <div key={index} className="mt-2 space-y-1">

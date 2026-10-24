@@ -99,7 +99,8 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
   if (!authenticated) return <p role="status" className="p-8">Checking your session...</p>;
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] flex flex-col lg:flex-row text-[#18181b]">
+    <div className="min-h-screen w-full bg-[#f7f6f2] flex flex-col lg:flex-row text-[#18181b]">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:p-3 focus:rounded-lg">Skip to content</a>
       {/* Mobile Top Bar */}
       <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-[#e4e2d8] sticky top-0 z-40">
         <Logo textSize="sm" />
@@ -116,6 +117,8 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
             aria-label="Toggle navigation"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="workspace-navigation"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -124,7 +127,8 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
 
       {/* Sidebar for Desktop & Mobile Drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#e4e2d8] flex flex-col justify-between p-6 transition-transform duration-200 lg:translate-x-0 lg:static lg:h-screen lg:sticky lg:top-0 ${
+        id="workspace-navigation"
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#e4e2d8] flex flex-col justify-between p-6 transition-transform duration-200 lg:translate-x-0 shrink-0 overflow-y-auto lg:h-screen lg:sticky lg:top-0 ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -133,6 +137,7 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
           <div className="flex items-center justify-between">
             <Logo textSize="md" />
             <button
+              aria-label="Close navigation"
               onClick={() => setMobileMenuOpen(false)}
               className="lg:hidden p-1 text-gray-400 hover:text-gray-600"
             >
@@ -152,10 +157,11 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
           </div>
 
           {/* Navigation Links */}
-          <nav className="space-y-1.5 pt-2">
+          <nav aria-label="Workspace" className="space-y-1.5 pt-2">
             {navItems.map((item) => (
               <Link
                 key={item.label}
+                aria-current={item.active ? "page" : undefined}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -208,7 +214,7 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
             <div className="w-7 h-7 rounded-full bg-[#0d5e4b] text-white flex items-center justify-center text-xs font-semibold">
               {identity ? identity.slice(0, 2).toUpperCase() : "TC"}
             </div>
-            <div className="text-xs leading-tight">
+            <div className="min-w-0 text-xs leading-tight break-words">
               <p className="font-medium text-[#18181b]">{identity || "Illustrative workspace"}</p>
               <p className="text-[11px] text-[#71717a]">Signed-in account</p>
             </div>
@@ -250,7 +256,7 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
         </header>
 
         {/* Dynamic page content */}
-        <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto">
+        <main id="main-content" className="workspace-content flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           <SyntheticBanner />
           {children}
         </main>

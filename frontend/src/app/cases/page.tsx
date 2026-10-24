@@ -16,6 +16,7 @@ import {
 export default function CasesPage() {
   const [error, setError] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "awaiting" | "progress" | "drafts">("all");
 
@@ -26,7 +27,7 @@ export default function CasesPage() {
         setCases(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load investigations.");
-      }
+      } finally { setLoading(false); }
     }
     loadData();
   }, []);
@@ -162,7 +163,7 @@ export default function CasesPage() {
 
           {/* Table */}
           <div className="overflow-x-auto border border-[#f0ede4] rounded-xl">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[620px] text-left text-sm">
               <thead className="bg-[#fcfbf9] text-[11px] font-bold uppercase tracking-wider text-[#71717a] border-b border-[#e4e2d8]">
                 <tr>
                   <th className="px-6 py-3.5">Investigation</th>
@@ -172,6 +173,7 @@ export default function CasesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0ede4]">
+                {loading || (!error && !filteredCases.length) ? <tr><td colSpan={4} className="px-6 py-12 text-center text-sm text-[#71717a]"><p role="status">{loading ? "Loading investigations…" : search ? "No investigations match your search." : "No investigations yet. Create your first case to get started."}</p></td></tr> : null}
                 {filteredCases.map((item) => (
                   <tr
                     key={item.id}
@@ -200,7 +202,7 @@ export default function CasesPage() {
                         {item.supplier_name}
                       </p>
                       <p className="text-xs text-[#71717a]">
-                        ₹{(item.order_value_inr != null ? item.order_value_inr.toLocaleString("en-IN") : "Not extracted")}
+                        {item.order_value_inr != null ? `₹${item.order_value_inr.toLocaleString("en-IN")}` : "Not extracted"}
                       </p>
                     </td>
                     <td className="px-6 py-4">
@@ -227,7 +229,7 @@ export default function CasesPage() {
           {/* Pagination matching Figma */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
             <span className="text-xs text-[#71717a]">
-              Showing 1–{filteredCases.length} of {filteredCases.length} investigations
+              Showing {filteredCases.length ? 1 : 0}–{filteredCases.length} of {filteredCases.length} investigations
             </span>
             <div className="flex items-center gap-1.5">
               <button

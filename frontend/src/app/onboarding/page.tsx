@@ -40,14 +40,14 @@ export default function OnboardingPage() {
     catch (failure) { setError(failure instanceof Error ? failure.message : "Workspace was not created."); }
     finally { pending.current = false; setBusy(false); }
   }
-  return <main className="min-h-screen bg-[#f7f6f2] p-8 flex justify-center items-center">
-    <section className="card-surface p-8 max-w-lg w-full space-y-5">
+  return <main className="min-h-screen bg-[#f7f6f2] p-4 sm:p-8 flex justify-center items-center">
+    <section className="card-surface p-6 sm:p-8 max-w-lg w-full space-y-5">
       <Logo /><h1 className="text-2xl font-bold">Set up your workspace</h1>
       <p className="text-sm text-gray-600">Create a separate purchasing workspace after confirming your email. You will have buyer access. An authorised administrator must separately assign reviewers; matching an organisation name does not join an existing workspace.</p>
       {error ? <p role="alert" className="text-red-700">{error}</p> : null}
       {!ready && !error ? <p role="status">Checking membership...</p> : null}
       {ready ? <form onSubmit={create} className="space-y-4">
-        <label className="block">Organisation name<input aria-label="Organisation name" required maxLength={200} value={name} onChange={e => setName(e.target.value)} className="block border rounded-lg p-3 w-full" /></label>
+        <label className="block">Organisation name<input aria-label="Organisation name" required maxLength={200} value={name} onChange={e => setName(e.target.value)} className="field-control" /></label>
         <button className="btn-primary" disabled={busy || !name.trim()}>{busy ? "Creating workspace..." : "Create buyer workspace"}</button>
       </form> : null}
       <a href="/auth" className="block text-sm underline">Sign in with another account</a>

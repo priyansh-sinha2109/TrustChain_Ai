@@ -14,6 +14,7 @@ import { Plus, ArrowRight, ArrowUpRight } from "lucide-react";
 export default function DashboardPage() {
   const [error, setError] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
@@ -22,7 +23,7 @@ export default function DashboardPage() {
         setCases(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load investigations.");
-      }
+      } finally { setLoading(false); }
     }
     loadData();
   }, []);
@@ -154,13 +155,13 @@ export default function DashboardPage() {
                 Recent investigations
               </h3>
               <p className="text-xs text-[#71717a] mt-0.5">
-                Illustrative records · Updated 24 October 2026
+                {DEMO_MODE ? "Illustrative records" : "Saved cases in your workspace"}
               </p>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[620px] text-left text-sm">
               <thead className="bg-[#fcfbf9] text-[11px] font-bold uppercase tracking-wider text-[#71717a] border-b border-[#e4e2d8]">
                 <tr>
                   <th className="px-6 py-3.5">Investigation</th>
@@ -170,6 +171,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0ede4]">
+                {loading || (!error && !cases.length) ? <tr><td colSpan={4} className="px-6 py-12 text-center text-sm text-[#71717a]"><p role="status">{loading ? "Loading investigations…" : "No investigations yet. Create your first purchasing case to get started."}</p></td></tr> : null}
                 {cases.map((item) => (
                   <tr
                     key={item.id}
@@ -198,7 +200,7 @@ export default function DashboardPage() {
                         {item.supplier_name}
                       </p>
                       <p className="text-xs text-[#71717a]">
-                        ₹{(item.order_value_inr != null ? item.order_value_inr.toLocaleString("en-IN") : "Not extracted")}
+                        {item.order_value_inr != null ? `₹${item.order_value_inr.toLocaleString("en-IN")}` : "Not extracted"}
                       </p>
                     </td>
                     <td className="px-6 py-4">

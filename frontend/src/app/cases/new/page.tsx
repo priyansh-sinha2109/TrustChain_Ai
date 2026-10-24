@@ -37,7 +37,6 @@ export default function NewCasePage() {
     <AppShell breadcrumb="Workspace / Investigations">
       <div className="max-w-4xl mx-auto space-y-6">
         {error ? <p role="alert" className="text-red-700">{error}</p> : null}
-        <label className="block text-sm">Public supplier URL (optional)<input aria-label="Public supplier URL" type="url" value={publicUrl} onChange={e => setPublicUrl(e.target.value)} className="block w-full rounded-lg border p-2" /></label>
         <p className="text-xs text-gray-600">Save the case title, supplier and optional public URL. Commercial terms come from uploaded PDFs. Reviewer permissions come from verified organisation membership.</p>
         {/* Title Header */}
         <div className="space-y-1">
@@ -53,7 +52,7 @@ export default function NewCasePage() {
         </div>
 
         {/* Stepper Header */}
-        <div className="bg-white border border-[#e4e2d8] rounded-xl px-6 py-4 flex items-center gap-3 text-xs font-semibold shadow-xs">
+        <div className="bg-white border border-[#e4e2d8] rounded-xl px-4 sm:px-6 py-4 flex flex-wrap items-center gap-3 text-xs font-semibold shadow-xs">
           <span className="text-[#0d5e4b] font-bold">1 Case details</span>
           <span className="text-gray-300">/</span>
           <span className="text-gray-400">2 Documents</span>
@@ -89,6 +88,8 @@ export default function NewCasePage() {
               />
             </div>
 
+            <label className="block text-xs font-semibold">Public supplier URL (optional)<input aria-label="Public supplier URL" type="url" value={publicUrl} onChange={e => setPublicUrl(e.target.value)} className="field-control" /></label>
+            <p className="text-xs text-[#71717a]">Only public pages. Your documents are never sent to the web agent.</p>
             {/* Two column: Supplier & PO */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -113,7 +114,7 @@ export default function NewCasePage() {
           </div>
 
           {/* Action buttons */}
-          <div className="pt-4 border-t border-[#e4e2d8] flex items-center gap-3">
+          <div className="pt-4 border-t border-[#e4e2d8] flex flex-wrap items-center gap-3">
             <button
               type="submit"
               disabled={loading}

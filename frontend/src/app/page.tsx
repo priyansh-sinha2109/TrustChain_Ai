@@ -12,7 +12,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#f7f6f2] text-[#18181b] flex flex-col justify-between">
       {/* Top Navbar matching Figma */}
-      <nav className="max-w-7xl mx-auto w-full px-6 py-6 flex items-center justify-between">
+      <nav className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex flex-wrap gap-4 items-center justify-between">
         <Logo textSize="lg" />
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#52525b]">
