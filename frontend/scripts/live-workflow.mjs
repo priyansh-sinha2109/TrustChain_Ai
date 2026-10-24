@@ -24,6 +24,15 @@ try {
   browser = await chromium.launch({ channel: "chrome" });
   const buyer = await browser.newPage();
   const reviewer = await browser.newPage();
+  for (const page of [buyer, reviewer]) {
+    page.on("response", response => {
+      const url = new URL(response.url());
+      if (url.pathname === "/auth/v1/token" || (url.hostname === "localhost" && url.pathname.startsWith("/api/v1/"))) {
+        console.log(`Live HTTP ${response.status()} ${response.request().method()} ${url.pathname}`);
+      }
+    });
+    page.on("pageerror", () => console.log("Browser runtime exception detected (details withheld)."));
+  }
   async function login(page, role) {
     stage = `${role.toLowerCase()} login`;
     await page.goto(`${base}/auth`);
@@ -36,6 +45,7 @@ try {
     check(await casesResponse === 200);
   }
   await login(buyer, "BUYER");
+  await login(reviewer, "REVIEWER");
   stage = "case creation";
   await buyer.goto(`${base}/cases/new`);
   await buyer.getByPlaceholder("e.g. Precision steel blanks").fill("SYNTHETIC live browser verification");
@@ -55,7 +65,6 @@ try {
     await buyer.getByText(`synthetic-${name}.pdf`, { exact: true }).waitFor({ timeout: 60000 });
   }
   check(await buyer.getByRole("button", { name: "Start investigation" }).isDisabled());
-  await login(reviewer, "REVIEWER");
   stage = "reviewer baseline approval";
   await reviewer.goto(`${base}/cases/${caseId}/documents`);
   await reviewer.getByRole("button", { name: "Approve baseline (reviewer)" }).click();
