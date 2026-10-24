@@ -1103,6 +1103,36 @@
               }
             ],
             "title": "Error Code"
+          },
+          "provider_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "PENDING",
+                  "RUNNING",
+                  "COMPLETED",
+                  "FAILED",
+                  "CANCELLED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Status"
+          },
+          "provider_finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Finished At"
           }
         },
         "type": "object",

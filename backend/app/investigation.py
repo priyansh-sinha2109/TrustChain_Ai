@@ -54,6 +54,7 @@ class Investigator:
                             job.stage = "PUBLIC_STARTING"
                             await self.repository.update_job(user_id, job)
                             job.provider_run_id = await self.tinyfish.start_public_research(case.public_supplier_url)
+                            job.provider_status = "PENDING"
                             await self.repository.update_job(user_id, job)
                         job.stage = "PUBLIC_TINYFISH"
                         await self.repository.update_job(user_id, job)
@@ -63,6 +64,12 @@ class Investigator:
                                 if run["status"] in {"COMPLETED", "FAILED", "CANCELLED"}:
                                     break
                                 await asyncio.sleep(5)
+                        job.provider_status = run["status"]
+                        if run.get("finished_at"):
+                            try:
+                                job.provider_finished_at = datetime.fromisoformat(run["finished_at"].replace("Z", "+00:00"))
+                            except (ValueError, TypeError, AttributeError):
+                                job.provider_finished_at = None
                         result.evidence = await self.tinyfish.normalize_public_result(run, case.public_supplier_url)
                         if not result.evidence:
                             raise AppError("PUBLIC_EVIDENCE_UNAVAILABLE", "No usable source-backed public observations were returned.", 503)

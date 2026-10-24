@@ -15,7 +15,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from trustchain.database.client import SupabaseClientConfig
-from trustchain.database.models import DocTypeEnum, RoleEnum, DecisionEnum
+from trustchain.database.models import DocTypeEnum, RoleEnum
 from trustchain.database.repository import SupabaseRepository
 from trustchain.database.security import TenantAuthorizer, TenantSecurityContext
 from trustchain.database.storage import StorageService, StorageError
@@ -23,6 +23,7 @@ from trustchain.database.transaction_client import TransactionClient
 
 from .config import Settings
 from .errors import AppError
+from .database_mapping import REVIEW_TO_DATABASE
 from .models import (Case, CaseCreate, Document, FindingsResponse, InvestigationStart,
                      Job, Review, UploadIntent, UploadTarget)
 
@@ -326,8 +327,7 @@ class SupabaseAdapter:
             row = self._job(connection, repo, context, data.job_id, lock=True)
             require(row["case_id"] == case_id and row["status"] in {"REVIEW_READY", "PARTIAL_REVIEW"},
                 "INVALID_REVIEW", "Investigation is not awaiting review.", 409)
-            decision = {"APPROVE": DecisionEnum.APPROVE_ADVANCE, "REJECT": DecisionEnum.REJECT_PAYMENT,
-                "REQUEST_CLARIFICATION": DecisionEnum.REQUEST_SUPPLIER_CLARIFICATION}[data.decision]
+            decision = REVIEW_TO_DATABASE[data.decision]
             saved = repo.append_review_decision(context, case_id, decision, data.comment)
             connection.execute("UPDATE public.review_decisions SET investigation_job_id=%s WHERE id=%s", (data.job_id, saved.id))
             connection.execute("UPDATE public.investigation_jobs SET status='REVIEWED',updated_at=clock_timestamp() WHERE id=%s", (data.job_id,))

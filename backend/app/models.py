@@ -102,6 +102,8 @@ class Job(BaseModel):
     request: InvestigationStart
     provider_run_id: str | None = None
     error_code: str | None = None
+    provider_status: Literal["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] | None = None
+    provider_finished_at: datetime | None = None
 
 
 class JobAccepted(BaseModel):
