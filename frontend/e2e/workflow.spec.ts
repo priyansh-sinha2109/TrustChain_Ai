@@ -180,7 +180,10 @@ for (const code of ["over_email_send_rate_limit", "over_request_rate_limit", "un
     await page.locator('input[type="email"]').fill("synthetic@example.com");
     await page.locator('input[type="password"]').fill("SYNTHETIC-not-a-real-password");
     // Two immediate submissions must produce one Auth request.
-    await page.locator("form").evaluate(form => { form.requestSubmit(); form.requestSubmit(); });
+    await page.locator("form").evaluate(form => {
+      if (!(form instanceof HTMLFormElement)) throw new Error("Expected signup form");
+      form.requestSubmit(); form.requestSubmit();
+    });
     await expect(page.getByText(code === "over_email_send_rate_limit" ? /Email delivery limit reached/ : /Too many authentication requests/)).toBeVisible();
     await expect(page.getByRole("button", { name: /Try again in/ })).toBeDisabled();
     expect(metrics.authRequests).toBe(1);
