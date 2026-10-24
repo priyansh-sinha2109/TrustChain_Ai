@@ -9,18 +9,14 @@ import { Case } from "@/types/api";
 import {
   Plus,
   Search,
-  Filter,
   ChevronDown,
-  ArrowRight,
   ArrowUpRight,
-  ArrowLeft,
 } from "lucide-react";
 
 export default function CasesPage() {
   const [cases, setCases] = useState<Case[]>([]);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "awaiting" | "progress" | "drafts">("all");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
@@ -29,8 +25,6 @@ export default function CasesPage() {
         setCases(data);
       } catch (err) {
         console.error("Failed to load cases", err);
-      } finally {
-        setLoading(false);
       }
     }
     loadData();

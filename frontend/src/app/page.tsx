@@ -3,11 +3,9 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import {
   ArrowRight,
-  ShieldCheck,
   FileText,
   TrendingUp,
   Search,
-  CheckCircle2,
 } from "lucide-react";
 
 export default function LandingPage() {

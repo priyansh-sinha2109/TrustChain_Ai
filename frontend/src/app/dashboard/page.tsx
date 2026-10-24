@@ -9,11 +9,10 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { SyntheticBanner } from "@/components/ui/SyntheticBanner";
 import { api } from "@/lib/api";
 import { Case } from "@/types/api";
-import { Plus, ArrowRight, ArrowUpRight, Search } from "lucide-react";
+import { Plus, ArrowRight, ArrowUpRight } from "lucide-react";
 
 export default function DashboardPage() {
   const [cases, setCases] = useState<Case[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
@@ -22,8 +21,6 @@ export default function DashboardPage() {
         setCases(data);
       } catch (err) {
         console.error("Failed to load cases", err);
-      } finally {
-        setLoading(false);
       }
     }
     loadData();

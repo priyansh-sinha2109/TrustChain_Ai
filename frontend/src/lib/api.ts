@@ -2,7 +2,6 @@ import {
   Case,
   CaseCreate,
   Document,
-  DocumentType,
   Evidence,
   FindingsResponse,
   InvestigationStart,
@@ -23,10 +22,9 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:8000";
 
-// When true or when live backend is unreachable, app uses clearly labeled synthetic demo data
-const DEMO_MODE =
+export const DEMO_MODE =
   process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  typeof window !== "undefined" && window.localStorage.getItem("tc_demo_mode") === "true";
+  (typeof window !== "undefined" && window.localStorage.getItem("tc_demo_mode") === "true");
 
 async function request<T>(
   path: string,
