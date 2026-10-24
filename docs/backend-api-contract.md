@@ -39,6 +39,15 @@ Pydantic contract and `repository.py` is the teammate adapter boundary.
 `GET /api/v1/me` returns only the verified user ID. Missing tokens return 401;
 unconfigured or unavailable authentication returns 503. Responses never echo token text.
 
+`GET /api/v1/membership` resolves exactly one active server-side membership and returns
+user_id, org_id, organization_name and role; absent or ambiguous membership returns 403.
+`POST /api/v1/onboarding/workspace` accepts only `{organization_name: string}` (1–200
+trimmed characters). A confirmed user with no membership can explicitly create a new
+tenant as buyer. It never joins a tenant by name or accepts a client role/org_id. Existing
+memberships are returned unchanged; inactive/ambiguous memberships are rejected.
+Provisioning, buyer membership and audit event are one transaction, serialised per user.
+Reviewer/admin assignment remains an authorised administrative operation.
+
 From the repository root on Windows:
 
 Use Python 3.11 or newer; this workspace was verified with Python 3.14.8.

@@ -1,5 +1,9 @@
 # Full-stack integration status — 24 October 2026
 
+Later authentication/onboarding work and current live-test prerequisites are recorded
+in [AUTH_INTEGRATION_STATUS.md](database/AUTH_INTEGRATION_STATUS.md). Counts and membership
+state below describe this earlier frontend-integration snapshot.
+
 **Verdict: INTEGRATION NOT READY.** The connected implementation and automated checks
 are prepared, but the authenticated hosted purchasing workflow has not run.
 

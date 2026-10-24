@@ -1,5 +1,8 @@
 # Live configuration and hosted verification
 
+See [AUTH_INTEGRATION_STATUS.md](AUTH_INTEGRATION_STATUS.md) for the subsequent approved
+test-organisation setup, account confirmation requirements and current test counts.
+
 Date: 24 October 2026. This supersedes the earlier hosted-blocker snapshot in integration-report.md.
 
 - Real credentials were found in the locally edited examples, preserved in ignored .env
