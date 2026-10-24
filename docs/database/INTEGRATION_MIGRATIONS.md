@@ -11,8 +11,9 @@ The integration branch adds only metadata and hardening around those procurement
 | 00007 | Reviewer-approved content hashes and immutable approval audit |
 | 00008 | Actual provider status and optional provider-supplied finish timestamp |
 | 00009 | Storage RLS binds canonical paths to actual cases and upload reservations |
+| 00010 | Explicit document-version currency and consistent per-advance SQL rounding |
 
-All nine SQL files applied successfully to an isolated native PostgreSQL 18.6
+All ten SQL files applied successfully to an isolated native PostgreSQL 18.6
 database with minimal Supabase Auth/Storage schema stand-ins. This verifies SQL execution,
 constraints and transaction behavior locally, not hosted Supabase policies or Storage.
 

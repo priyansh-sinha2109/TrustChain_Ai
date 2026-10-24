@@ -56,7 +56,7 @@ def sql_environment():
     return app,adapter,identity,objects,requests,org,buyer,reviewer,outsider
 
 
-def prepare_case(client, env):
+def prepare_case(client, env, currency="INR"):
     app,adapter,identity,objects,requests,org,buyer,reviewer,outsider=env
     response=client.post("/api/v1/cases",json={"title":"Synthetic panel purchase","supplier_name":"SYNTHETIC supplier",
         "public_supplier_url":"https://example.com"})
@@ -64,7 +64,7 @@ def prepare_case(client, env):
     case_id=response.json()["id"]
     docs=[]
     for kind,thickness,advance,days in [("ACCEPTED_QUOTE",8,30,7),("FINAL_PI",6,80,20)]:
-        content=pdf_bytes(["Part number: PANEL-A",f"Thickness: {thickness} mm","Order value: INR 480000",
+        content=pdf_bytes(["Part number: PANEL-A",f"Thickness: {thickness} mm",f"Order value: {currency} 480000",
             f"Advance: {advance}%",f"Delivery: {days} days"])
         ticket=client.post(f"/api/v1/cases/{case_id}/documents/upload-intents",json={"filename":kind+".pdf",
             "document_type":kind,"size_bytes":len(content)})
@@ -276,3 +276,17 @@ def test_real_sql_rounds_each_advance_before_subtracting():
         baseline,final,difference,increased=connection.execute(
             "SELECT * FROM public.calculate_advance_exposure(1.01,50,1.02,50)").fetchone()
         assert baseline==final and difference==0 and increased is False
+
+
+def test_real_sql_document_currency_is_not_relabelled_as_case_default(sql_environment):
+    app,adapter,identity,objects,requests,org,buyer,reviewer,outsider=sql_environment
+    with TestClient(app) as client:
+        case_id,payload=prepare_case(client,sql_environment,currency="USD")
+        started=client.post(f"/api/v1/cases/{case_id}/investigations",json=payload,headers={"Idempotency-Key":"usd-version"})
+        assert client.get(started.json()["poll_url"]).json()["status"]=="REVIEW_READY"
+        result=client.get(f"/api/v1/cases/{case_id}/findings").json()
+        assert result["advance_exposure"]["currency"]=="USD"
+        with psycopg.connect(TEST_URL) as connection:
+            assert connection.execute("SELECT currency FROM public.purchase_cases WHERE id=%s",(case_id,)).fetchone()[0]=="INR"
+            assert {row[0] for row in connection.execute("SELECT currency FROM public.deal_versions WHERE investigation_job_id=%s",
+                (started.json()["job_id"],)).fetchall()}=={"USD"}
