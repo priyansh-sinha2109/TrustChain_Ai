@@ -201,3 +201,48 @@ test("authenticated user without membership completes explicit buyer onboarding"
   await expect(page).toHaveURL(/dashboard/);
   expect(metrics.workspaceRequests).toBe(1);
 });
+
+
+// Layout-only checks use the same intercepted synthetic APIs as the contract suite.
+for (const width of [390, 768, 1440]) {
+  test(`responsive workspace layout at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await fixtures(page);
+    await login(page);
+    for (const path of ["/dashboard", "/cases", "/cases/new", `/cases/${caseId}/documents`, `/cases/${caseId}/progress?job_id=${jobId}`, `/cases/${caseId}/findings`, `/cases/${caseId}/evidence`, `/cases/${caseId}/review`, `/cases/${caseId}/reports`, "/help"]) {
+      await page.goto(path);
+      await expect(page.locator("#main-content")).toBeVisible();
+      await expect(page.locator("#main-content h1")).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `page overflow: ${path}`).toBe(true);
+      expect(await page.locator("body").evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(247, 246, 242)");
+      await page.screenshot({ path: `../tmp/ui-${width}-${path.split("/").pop()?.split("?")[0] || "home"}.png`, fullPage: true });
+    }
+    if (width < 1024) {
+      const toggle = page.getByRole("button", { name: "Toggle navigation" });
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByRole("navigation", { name: "Workspace", exact: true })).toBeInViewport();
+      await page.getByRole("button", { name: "Close navigation" }).click();
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+test("public-page styles and compact mobile login", async ({ page }) => {
+  await fixtures(page);
+  const brokenStyles: string[] = [];
+  page.on("response", response => {
+    if (response.request().resourceType() === "stylesheet" && !response.ok()) brokenStyles.push(response.url());
+  });
+  await page.goto("/");
+  const cta = page.getByRole("link", { name: "Log in / Sign up" });
+  expect(parseFloat(await cta.evaluate(el => getComputedStyle(el).borderRadius))).toBeGreaterThan(1000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/auth");
+  const email = page.locator('input[type="email"]');
+  await expect(email).toBeInViewport();
+  await expect(page.getByRole("button", { name: "Log in to workspace" })).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(brokenStyles).toEqual([]);
+  await page.screenshot({ path: "../tmp/ui-mobile-auth.png", fullPage: true });
+});
