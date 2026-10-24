@@ -23,7 +23,7 @@ from trustchain.database.transaction_client import TransactionClient
 
 from .config import Settings
 from .errors import AppError
-from .database_mapping import REVIEW_TO_DATABASE
+from .database_mapping import REVIEW_TO_DATABASE, research_status
 from .models import (Case, CaseCreate, Document, FindingsResponse, InvestigationStart,
                      Job, Review, UploadIntent, UploadTarget)
 
@@ -234,7 +234,8 @@ class SupabaseAdapter:
     def _job_model(row):
         return Job(id=row["id"], case_id=row["case_id"], status=row["status"], stage=row["stage"],
             request=InvestigationStart.model_validate(row["request_data"]),
-            provider_run_id=row["provider_run_id"], error_code=row["error_code"])
+            provider_run_id=row["provider_run_id"], error_code=row["error_code"],
+            provider_status=row.get("provider_status"), provider_finished_at=row.get("provider_finished_at"))
 
     async def create_job(self, user_id: UUID, case_id: UUID, key: str, data: InvestigationStart) -> tuple[Job, bool]:
         def create(connection, repo, context):
@@ -284,6 +285,7 @@ class SupabaseAdapter:
         return token is not None
 
     def _owned_job(self, connection, repo, context, job_id, lease):
+        TenantAuthorizer.verify_role_permission(context, [RoleEnum.BUYER, RoleEnum.ADMIN])
         row = self._job(connection, repo, context, job_id, lock=True)
         require(lease and lease[0] == job_id and row["lease_token"] == lease[1]
             and row["lease_until"] > datetime.now(timezone.utc) and row["status"] == "PROCESSING"
@@ -297,15 +299,38 @@ class SupabaseAdapter:
                 "IMMUTABLE_JOB", "Job identity and request cannot change.", 409)
             require(job.status in {"PROCESSING", "FAILED"}, "INVALID_JOB_TRANSITION", "Use atomic result persistence for terminal review states.", 409)
             connection.execute("""UPDATE public.investigation_jobs SET status=%s,stage=%s,
-                provider_run_id=%s,error_code=%s,updated_at=clock_timestamp(),
+                provider_run_id=%s,error_code=%s,provider_status=%s,provider_finished_at=%s,updated_at=clock_timestamp(),
                 lease_until=CASE WHEN %s='FAILED' THEN NULL ELSE lease_until END
-                WHERE id=%s""", (job.status, job.stage, job.provider_run_id, job.error_code, job.status, job.id))
+                WHERE id=%s""", (job.status, job.stage, job.provider_run_id, job.error_code,
+                    job.provider_status, job.provider_finished_at, job.status, job.id))
+            if job.provider_run_id:
+                case = self._case(connection, repo, context, job.case_id)
+                run = connection.execute("SELECT id FROM public.public_research_runs WHERE investigation_job_id=%s",
+                    (job.id,)).fetchone()
+                if not run:
+                    saved = repo.save_public_research_run(context, job.case_id, job.provider_run_id,
+                        case.public_supplier_url, research_status(job.provider_status),
+                        raw_result={"provider_status": job.provider_status})
+                    run = {"id": saved.id}
+                    connection.execute("UPDATE public.public_research_runs SET investigation_job_id=%s WHERE id=%s", (job.id, saved.id))
+                connection.execute("""UPDATE public.public_research_runs SET status=%s,error_code=%s,
+                    completed_at=%s,raw_result=%s WHERE id=%s""", (research_status(job.provider_status).value,
+                    job.error_code, job.provider_finished_at, Jsonb({"provider_status": job.provider_status}), run["id"]))
         await self._call(user_id, update, self.lease.get())
 
     async def save_results(self, user_id: UUID, result: FindingsResponse) -> None:
         def save(connection, repo, context, lease):
             from .supabase_results import persist_results
+            job = self._job(connection, repo, context, result.job_id, lock=True)
+            if job["terminal_result_id"]:
+                TenantAuthorizer.verify_role_permission(context, [RoleEnum.BUYER, RoleEnum.ADMIN])
+                previous = connection.execute("SELECT payload FROM public.investigation_results WHERE id=%s", (job["terminal_result_id"],)).fetchone()
+                require(job["user_id"] == user_id and previous["payload"] == result.model_dump(mode="json"),
+                    "IMMUTABLE_RESULT", "Terminal result cannot be replaced.", 409)
+                return
             row = self._owned_job(connection, repo, context, result.job_id, lease)
+            case = self._case(connection, repo, context, row["case_id"])
+            require(result.supplier_id == case.supplier_id, "RESULT_ASSOCIATION_INVALID", "Result supplier differs from the case.", 409)
             persist_results(connection, repo, context, row, result)
         await self._call(user_id, save, self.lease.get())
 
