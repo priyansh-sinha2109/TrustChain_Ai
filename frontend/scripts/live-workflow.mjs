@@ -29,9 +29,11 @@ try {
     await page.goto(`${base}/auth`);
     await page.locator('input[type="email"]').fill(env[`TRUSTCHAIN_TEST_${role}_EMAIL`]);
     await page.locator('input[type="password"]').fill(env[`TRUSTCHAIN_TEST_${role}_PASSWORD`]);
+    const casesResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/v1/cases" && response.request().method() === "GET", { timeout: 60000 }).then(response => response.status()).catch(() => 0);
     await page.getByRole("button", { name: "Log in to workspace" }).click();
-    await page.waitForURL(/\/dashboard$/, { timeout: 30000 });
-    await page.getByRole("heading", { name: "Your purchasing workspace." }).waitFor({ timeout: 30000 });
+    await page.waitForURL(/\/dashboard$/, { timeout: 60000 });
+    await page.getByRole("heading", { name: "Your purchasing workspace." }).waitFor({ timeout: 60000 });
+    check(await casesResponse === 200);
   }
   await login(buyer, "BUYER");
   stage = "case creation";

@@ -3,8 +3,8 @@
 Date: 24 October 2026. Branch: `integration/backend-supabase`.
 This supersedes the membership/setup blockers in the earlier integration snapshots.
 
-**INTEGRATION NOT READY:** reviewer confirmation and real test-account credentials
-are still required before genuine Auth/Storage/browser verification can complete.
+**INTEGRATION NOT READY:** reviewer confirmation and a real reviewer session are still
+required before the complete hosted investigation/review/browser workflow can run.
 
 ## Diagnosis and safe fixes
 
@@ -79,10 +79,23 @@ assignment remains an authorised administrative operation.
   element type in the new double-submit test. pip check and compileall passed.
 - Ten migrations passed on a fresh isolated local database, with local Auth/Storage
   stand-ins. Existing cross-tenant and reviewer/buyer tests remain intact.
-- Explicit hosted workflow invocation: 1 skipped because both access tokens are absent.
-  The helper refused to attempt login while an account email was unconfirmed.
-- Real signed object upload/download, hosted Auth sessions, live investigation and
-  complete browser workflow: NOT TESTED. No successful result is claimed.
+- Explicit hosted workflow invocation: 1 skipped while test tokens were absent. The
+  full token helper correctly refused paired setup while the reviewer was unconfirmed.
+- Subsequent genuine Buyer password login returned HTTP 200 and the expected UUID.
+  Real Supabase token verification, membership and case-list APIs returned HTTP 200.
+  The Buyer access token is stored privately. Both password entries are now present
+  in ignored .env; relevant Git history contains neither supplied password.
+- Genuine Buyer Chrome login and dashboard passed against the actual frontend,
+  FastAPI and Supabase. An initial development-route timeout was followed by a
+  successful run; the live runner allows a bounded 60-second dashboard/API wait.
+- Real signed upload, confirmation and byte-identical private retrieval PASSED for
+  three labelled synthetic PDFs: RFQ, accepted quotation and final PI. No baseline
+  was automatically approved. Anonymous direct object access was denied.
+- Actual Data API tenant visibility: Buyer sees one organisation, anonymous sees none.
+  Buyer baseline approval was denied with HTTP 403. Live cross-organisation access
+  using a separate tenant's real Auth user remains untested; local SQL isolation tests pass.
+- Reviewer Auth, live investigation/review, saved comparison/exposure and complete
+  browser/report workflow remain NOT TESTED pending reviewer email confirmation.
 - No new TinyFish run. Its live test now requires the separate
   TRUSTCHAIN_LIVE_TINYFISH=1 flag, which remains unset. The previous successful provider
   smoke remains historical evidence only.
@@ -92,7 +105,7 @@ assignment remains an authorised administrative operation.
 Follow [LIVE_TOKEN_SETUP.md](LIVE_TOKEN_SETUP.md). Confirm the reviewer email through
 its inbox or the explicit, account-specific authorised admin helper. Add existing
 passwords privately to ignored root `.env` as TRUSTCHAIN_TEST_BUYER_PASSWORD and
-TRUSTCHAIN_TEST_REVIEWER_PASSWORD. The setup helper can alternatively prompt secretly.
+TRUSTCHAIN_TEST_REVIEWER_PASSWORD (both are now present). The helper can alternatively prompt secretly.
 It validates the project, account UUIDs, confirmed emails and roles before signing in
 once per user, then stores real access tokens/account emails without printing them.
 
@@ -108,3 +121,7 @@ Remaining product limits: reviewer/admin assignment is administrative; PDF expor
 an ASCII font and does not fetch historical review comments or store a cloud report.
 BackgroundTasks is not an automatic durable worker. PR #2 remains draft; no production
 deployment, main/Backend merge, history rewrite or force-push occurred.
+
+Controlled private-Storage verification case UUID: `7996ea81-d79d-44e6-bf14-1ef0f78431ee`.
+Its three synthetic PDFs remain available for the pending approved reviewer action;
+no confidential buyer documents or fabricated public supplier evidence were used.
