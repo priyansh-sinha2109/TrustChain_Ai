@@ -8,6 +8,7 @@ from .errors import AppError
 from .investigation import Investigator
 from .models import (Case, CaseCreate, Document, FindingsResponse, InvestigationStart,
                      Job, JobAccepted, Review, UploadConfirm, UploadIntent, UploadTarget, User, Evidence)
+from .models import DocumentApproval
 from .security import authenticate
 
 router = APIRouter(prefix="/api/v1", dependencies=[Depends(authenticate)])
@@ -59,6 +60,14 @@ async def confirm(case_id: UUID, data: UploadConfirm, user: CurrentUser, repo: R
 async def documents(case_id: UUID, user: CurrentUser, repo: Repo):
     await repo.get_case(user.id, case_id)
     return await repo.list_documents(user.id, case_id)
+
+
+@router.post("/cases/{case_id}/documents/{document_id}/approval", response_model=Document)
+async def approve_document(case_id: UUID, document_id: UUID, data: DocumentApproval, user: CurrentUser, repo: Repo):
+    await repo.get_case(user.id, case_id)
+    if not hasattr(repo, "approve_document"):
+        raise AppError("APPROVAL_UNAVAILABLE", "Document approval is not supported by the configured adapter.", 503)
+    return await repo.approve_document(user.id, case_id, document_id, data.note)
 
 
 @router.post("/cases/{case_id}/investigations", response_model=JobAccepted, status_code=202)

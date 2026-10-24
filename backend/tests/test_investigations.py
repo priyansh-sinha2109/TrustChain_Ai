@@ -172,3 +172,15 @@ def test_committed_openapi_matches_application():
     from pathlib import Path
     schema = Path(__file__).resolve().parents[2] / "docs" / "backend-openapi.json"
     assert json.loads(schema.read_text(encoding="utf-8")) == create_app(Settings(_env_file=None)).openapi()
+
+
+def test_explicit_approval_endpoint_delegates_with_verified_identity(setup):
+    app, repo, case_id, data = setup
+    document = next(iter(repo.docs.values()))[0]
+    repo.approve_document = AsyncMock(return_value=document)
+    with TestClient(app) as client:
+        response = client.post(f"/api/v1/cases/{case_id}/documents/{document.id}/approval",
+            json={"note": "Engineering accepted the purchasing baseline."})
+        assert response.status_code == 200
+    repo.approve_document.assert_awaited_once_with(repo.owner, case_id, document.id,
+        "Engineering accepted the purchasing baseline.")

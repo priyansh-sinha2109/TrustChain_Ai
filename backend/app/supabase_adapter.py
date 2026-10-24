@@ -202,6 +202,25 @@ class SupabaseAdapter:
             return document, content
         return await self._call(user_id, download)
 
+    async def approve_document(self, user_id: UUID, case_id: UUID, document_id: UUID, note: str) -> Document:
+        def approve(connection, repo, context):
+            TenantAuthorizer.verify_reviewer_authority(context)
+            document, row = self._document(connection, repo, context, case_id, document_id, lock=True)
+            require(document.document_type in {"ACCEPTED_QUOTE", "PURCHASE_ORDER"} and row["sha256"],
+                "INVALID_BASELINE", "Only a confirmed quotation or purchase order can be approved.", 422)
+            if document.approved:
+                return document
+            content = self.storage.download_document(row["storage_key"], context.org_id, case_id)
+            require(len(content) == document.size_bytes and self.storage.compute_sha256(content) == row["sha256"],
+                "DOCUMENT_INTEGRITY_FAILED", "Document bytes changed after registration.", 409)
+            connection.execute("""INSERT INTO public.document_approvals
+                (document_id,org_id,case_id,approved_by,sha256,note) VALUES (%s,%s,%s,%s,%s,%s)""",
+                (document_id, context.org_id, case_id, user_id, row["sha256"], note))
+            repo.append_audit_event(context, "BASELINE_DOCUMENT_APPROVED", {
+                "document_id": str(document_id), "case_id": str(case_id), "sha256": row["sha256"], "note": note})
+            return document.model_copy(update={"approved": True})
+        return await self._call(user_id, approve)
+
     @staticmethod
     def _job(connection, repo, context, job_id, lock=False):
         row = connection.execute("SELECT * FROM public.investigation_jobs WHERE id=%s AND org_id=%s" +

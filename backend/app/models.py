@@ -48,6 +48,10 @@ class UploadConfirm(BaseModel):
     document_id: UUID
 
 
+class DocumentApproval(BaseModel):
+    note: str = Field(min_length=1, max_length=2000)
+
+
 class UploadTarget(BaseModel):
     document_id: UUID
     upload_url: str
