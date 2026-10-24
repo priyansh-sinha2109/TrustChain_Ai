@@ -99,6 +99,14 @@ def project_evidence(connection, repo, context, result):
         version_no = connection.execute("SELECT COALESCE(MAX(version_no),0)+1 AS n FROM public.deal_versions WHERE case_id=%s AND stage=%s",
             (case_id, stage.value)).fetchone()["n"]
         total, advance, delivery = [scalar(document_id, key) for key in ("total_amount", "advance_percentage", "delivery_days")]
+        currencies = {field.unit for field in result.extracted_fields if field.document_id == document_id
+            and field.field_key in {"total_amount", "advance_amount", "unit_price"}
+            and field.unit and field.unit != "UNSUPPORTED"}
+        currencies |= {field.value.upper() for field in result.extracted_fields
+            if field.document_id == document_id and field.field_key == "currency"}
+        currency = next(iter(currencies)) if len(currencies) == 1 else None
+        if currency and (len(currency) != 3 or not currency.isalpha()):
+            currency = None
         if total is not None and advance is not None:
             repo.save_deal_version(context, case_id, stage, total, advance, supplier_id=result.supplier_id,
                 document_id=document_id, version_no=version_no,
@@ -111,7 +119,7 @@ def project_evidence(connection, repo, context, result):
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""", (version_id, case_id, result.supplier_id,
                     document_id, stage.value, version_no, Decimal(total) if total is not None else None,
                     Decimal(advance) if advance is not None else None, int(delivery) if delivery is not None else None))
-        connection.execute("UPDATE public.deal_versions SET investigation_job_id=%s WHERE id=%s", (job_id, version_id))
+        connection.execute("UPDATE public.deal_versions SET investigation_job_id=%s,currency=%s WHERE id=%s", (job_id, currency, version_id))
         versions.append(version_id)
 
     for index, finding in enumerate(result.findings):

@@ -120,6 +120,8 @@ def test_real_sql_document_job_findings_and_review(sql_environment):
                 (response.json()["job_id"],)).fetchone()["n"]>=8
             assert connection.execute("SELECT count(*) AS n FROM public.claims WHERE investigation_job_id=%s",
                 (response.json()["job_id"],)).fetchone()["n"]==10
+            assert {r["currency"] for r in connection.execute("SELECT currency FROM public.deal_versions WHERE investigation_job_id=%s",
+                (response.json()["job_id"],)).fetchall()}=={"INR"}
         identity["id"]=outsider
         assert client.get(f"/api/v1/cases/{case_id}").status_code==403
     # New application/adapter instance retrieves the same immutable persisted result.
@@ -267,3 +269,10 @@ def test_real_sql_storage_rls_requires_case_and_reservation(sql_environment):
                 with connection.transaction():
                     connection.execute("INSERT INTO storage.objects(id,bucket_id,name) VALUES (%s,'case-documents',%s)",(uuid4(),unknown))
             connection.rollback()
+
+
+def test_real_sql_rounds_each_advance_before_subtracting():
+    with psycopg.connect(TEST_URL) as connection:
+        baseline,final,difference,increased=connection.execute(
+            "SELECT * FROM public.calculate_advance_exposure(1.01,50,1.02,50)").fetchone()
+        assert baseline==final and difference==0 and increased is False
