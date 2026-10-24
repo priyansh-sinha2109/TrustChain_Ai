@@ -24,7 +24,7 @@ from trustchain.database.transaction_client import TransactionClient
 from .config import Settings
 from .errors import AppError
 from .database_mapping import REVIEW_TO_DATABASE, research_status
-from .models import (Case, CaseCreate, Document, FindingsResponse, InvestigationStart,
+from .models import (Case, CaseCreate, Document, FindingsResponse, InvestigationStart, Membership,
                      Job, Review, UploadIntent, UploadTarget)
 
 
@@ -67,10 +67,10 @@ class SupabaseAdapter:
     async def close(self):
         await asyncio.to_thread(self.executor.shutdown, wait=True)
 
-    async def _call(self, user_id, operation, *args):
+    async def _call(self, user_id, operation, *args, resolve_membership=True):
         async with self.slots:
             future = asyncio.get_running_loop().run_in_executor(self.executor,
-                self._transaction, user_id, operation, args)
+                self._transaction, user_id, operation, args, resolve_membership)
             try:
                 return await asyncio.shield(future)
             except asyncio.CancelledError:
@@ -78,11 +78,11 @@ class SupabaseAdapter:
                 await asyncio.shield(future)
                 raise
 
-    def _transaction(self, user_id, operation, args):
+    def _transaction(self, user_id, operation, args, resolve_membership=True):
         try:
             with self.connect(self.settings.database_url.get_secret_value(), row_factory=dict_row,
                     connect_timeout=10, options="-c statement_timeout=15000 -c lock_timeout=5000") as connection:
-                context = resolve_context(connection, user_id)
+                context = resolve_context(connection, user_id) if resolve_membership else None
                 repo = SupabaseRepository(TransactionClient(connection, self.config))
                 return operation(connection, repo, context, *args)
         except PermissionError:
@@ -91,6 +91,33 @@ class SupabaseAdapter:
             raise AppError(exc.code, exc.message, exc.status) from None
         except psycopg.Error:
             raise AppError("DATABASE_UNAVAILABLE", "Database operation could not be completed.", 503) from None
+
+    async def get_membership(self, user_id):
+        def membership(connection, repo, context):
+            name = connection.execute("SELECT name FROM public.organizations WHERE id=%s", (context.org_id,)).fetchone()["name"]
+            return Membership(user_id=user_id, org_id=context.org_id, organization_name=name, role=context.role.value)
+        return await self._call(user_id, membership)
+
+    async def create_workspace(self, user_id, data):
+        def provision(connection, repo, unused_context):
+            # A per-user transaction lock serialises repeated onboarding requests.
+            connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (str(user_id),))
+            confirmed = connection.execute("SELECT email_confirmed_at IS NOT NULL AS confirmed FROM auth.users WHERE id=%s", (user_id,)).fetchone()
+            require(confirmed and confirmed["confirmed"], "EMAIL_CONFIRMATION_REQUIRED", "Confirm your email before creating a workspace.", 403)
+            existing = connection.execute("SELECT is_active FROM public.organization_members WHERE user_id=%s", (user_id,)).fetchall()
+            if existing:
+                require(any(row["is_active"] for row in existing), "MEMBERSHIP_INACTIVE", "Your membership is inactive. Contact your organisation administrator.", 403)
+                context = resolve_context(connection, user_id)
+                name = connection.execute("SELECT name FROM public.organizations WHERE id=%s", (context.org_id,)).fetchone()["name"]
+                return Membership(user_id=user_id, org_id=context.org_id, organization_name=name, role=context.role.value)
+            org_id = uuid4()
+            # Names never grant access to an existing tenant. Self-service grants buyer only.
+            connection.execute("INSERT INTO public.organizations(id,name,slug) VALUES (%s,%s,%s)", (org_id, data.organization_name, "workspace-" + str(org_id)))
+            connection.execute("INSERT INTO public.organization_members(org_id,user_id,role,is_active) VALUES (%s,%s,'buyer',true)", (org_id, user_id))
+            context = TenantSecurityContext(user_id=user_id, org_id=org_id, role=RoleEnum.BUYER)
+            repo.append_audit_event(context, action="workspace.created", payload={"initial_role": "buyer"})
+            return Membership(user_id=user_id, org_id=org_id, organization_name=data.organization_name, role="buyer")
+        return await self._call(user_id, provision, resolve_membership=False)
 
     @staticmethod
     def _case(connection, repo, context, case_id):

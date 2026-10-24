@@ -28,6 +28,18 @@ class User(BaseModel):
     id: UUID
 
 
+class WorkspaceCreate(BaseModel):
+    model_config = {"extra": "forbid", "str_strip_whitespace": True}
+    organization_name: str = Field(min_length=1, max_length=200)
+
+
+class Membership(BaseModel):
+    user_id: UUID
+    org_id: UUID
+    organization_name: str
+    role: Literal["buyer", "reviewer", "admin"]
+
+
 class CaseCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     supplier_name: str = Field(min_length=1, max_length=200)

@@ -29,6 +29,8 @@ export type Job = { "id": string; "case_id": string; "status": "QUEUED" | "PROCE
 
 export type JobAccepted = { "job_id": string; "status": string; "poll_url": string; };
 
+export type Membership = { "user_id": string; "org_id": string; "organization_name": string; "role": "buyer" | "reviewer" | "admin"; };
+
 export type Review = { "job_id": string; "decision": "APPROVE" | "REQUEST_CLARIFICATION" | "REJECT"; "comment": string; };
 
 export type SourceField = { "document_id": string; "document_type": DocumentType; "field_key": string; "value": string; "unit"?: string | null; "line_item"?: string | null; "page_number": number; "raw_text": string; };
@@ -40,3 +42,5 @@ export type UploadIntent = { "filename": string; "document_type": DocumentType; 
 export type UploadTarget = { "document_id": string; "upload_url": string; "expires_at": string; };
 
 export type User = { "id": string; };
+
+export type WorkspaceCreate = { "organization_name": string; };

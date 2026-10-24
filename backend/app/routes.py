@@ -9,7 +9,7 @@ from .errors import AppError
 from .investigation import Investigator
 from .models import (Case, CaseCreate, Document, FindingsResponse, InvestigationStart,
                      Job, JobAccepted, Review, UploadConfirm, UploadIntent, UploadTarget, User, Evidence)
-from .models import DocumentApproval
+from .models import DocumentApproval, Membership, WorkspaceCreate
 from .security import authenticate
 
 router = APIRouter(prefix="/api/v1", dependencies=[Depends(authenticate)])
@@ -24,6 +24,16 @@ def repository(request: Request):
 
 
 Repo = Annotated[object, Depends(repository)]
+
+
+@router.get("/membership", response_model=Membership)
+async def membership(user: CurrentUser, repo: Repo):
+    return await repo.get_membership(user.id)
+
+
+@router.post("/onboarding/workspace", response_model=Membership)
+async def create_workspace(data: WorkspaceCreate, user: CurrentUser, repo: Repo):
+    return await repo.create_workspace(user.id, data)
 
 
 def investigator(request: Request, repo):
