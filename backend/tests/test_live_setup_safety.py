@@ -76,3 +76,14 @@ async def test_chargeable_provider_requires_its_own_opt_in(monkeypatch):
     monkeypatch.setattr(live, "dotenv_values", lambda path: {"TRUSTCHAIN_LIVE_TESTS": "1"})
     with pytest.raises(pytest.skip.Exception, match="Chargeable TinyFish"):
         await live.test_controlled_live_tinyfish_smoke()
+
+
+@pytest.mark.parametrize("code,expected", [("invalid_credentials", "invalid_credentials"), ("synthetic-secret-response", "unclassified")])
+def test_login_diagnostics_only_print_allowlisted_codes(setup_helper, capsys, code, expected):
+    _, _, transport = setup_helper
+    transport(lambda request: httpx.Response(400, json={"error_code": code, "msg": "synthetic-private-response"}))
+    assert helper.run() == 1
+    output = capsys.readouterr().out
+    assert f"HTTP 400, {expected}" in output
+    assert "synthetic-private-response" not in output
+    assert "synthetic-secret-response" not in output

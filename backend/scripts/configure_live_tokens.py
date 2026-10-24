@@ -71,7 +71,9 @@ def run(confirm_reviewer=False):
                 json={"email": account["email"], "password": password})
             body = response.json()
             if response.status_code != 200 or body.get("user", {}).get("id") != account["id"] or not body.get("access_token"):
-                print(f"{role.capitalize()} sign-in failed (HTTP {response.status_code}); no retry attempted.")
+                code = body.get("error_code", body.get("code"))
+                safe_code = code if code in {"invalid_credentials", "email_not_confirmed", "over_request_rate_limit", "over_email_send_rate_limit"} else "unclassified"
+                print(f"{role.capitalize()} sign-in failed (HTTP {response.status_code}, {safe_code}); no retry attempted.")
                 return 1
             tokens[f"TRUSTCHAIN_TEST_{role.upper()}_ACCESS_TOKEN"] = body["access_token"]
         for name, value in tokens.items():
