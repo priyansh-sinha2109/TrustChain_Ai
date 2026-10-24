@@ -91,6 +91,9 @@ class Investigator:
                 await self.repository.update_job(user_id, job)
                 await self.repository.save_results(user_id, result)
             except Exception as exc:
+                if isinstance(exc, AppError) and exc.code == "LEASE_LOST":
+                    logging.getLogger(__name__).info("Investigation %s lease was replaced; stale worker stopped", job.id)
+                    return
                 job.status, job.stage = "FAILED", "FAILED"
                 job.error_code = exc.code if isinstance(exc, AppError) else "INVESTIGATION_FAILED"
                 logging.getLogger(__name__).error("Investigation %s failed (%s)", job.id, type(exc).__name__)

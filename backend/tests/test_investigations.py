@@ -184,3 +184,13 @@ def test_explicit_approval_endpoint_delegates_with_verified_identity(setup):
         assert response.status_code == 200
     repo.approve_document.assert_awaited_once_with(repo.owner, case_id, document.id,
         "Engineering accepted the purchasing baseline.")
+
+
+async def test_stale_worker_stops_without_marking_replacement_failed(setup):
+    from app.investigation import Investigator
+    from app.models import InvestigationStart
+    app,repo,case_id,data=setup
+    job,_=await repo.create_job(repo.owner,case_id,"stale-worker",InvestigationStart(**data))
+    repo.update_job=AsyncMock(side_effect=AppError("LEASE_LOST","A replacement owns the job",409))
+    await Investigator(repo,app.state.tinyfish,app.state.processing_slots).execute(repo.owner,job.id)
+    assert repo.update_job.await_count==1
