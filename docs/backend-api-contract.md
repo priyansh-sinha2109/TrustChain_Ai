@@ -47,3 +47,23 @@ python -m venv .venv
 Copy `backend/.env.example` to `backend/.env` and set the project URL and anon key.
 The anon key is used only to contact Auth; privileged server keys are not needed by
 this backend contract. Member 3 owns private Storage access and database credentials.
+
+## TinyFish module guide
+
+`backend/app/tinyfish.py` implements server-side start, poll and normalization using
+[the official Agent reference](https://docs.tinyfish.ai/agent-api/reference).
+POST `/v1/automation/run-async` returns a run ID; GET `/v1/runs/{id}` retrieves state.
+There is no user-supplied goal: only an approved public URL leaves the backend.
+Provider payloads and errors are not passed verbatim to the frontend.
+
+Set `TINYFISH_API_KEY` privately and run from `backend`: `python -m scripts.tinyfish_smoke`.
+The script prints real run state and validated source observations, never credentials.
+Tests in `test_tinyfish.py` use mocked HTTP, not a live provider account.
+
+URLs require HTTPS, an exact configured hostname, public DNS addresses, and no
+credentials, query strings, fragments or custom ports. Supabase hosts are blocked.
+Research is deliberately limited to the supplied page. Evidence from other URLs is
+discarded. The remote browser owns redirects and DNS resolution: the local backend
+cannot enforce network isolation inside TinyFish. The fixed goal forbids navigation,
+but provider-level redirect/DNS enforcement remains an external dependency; do not
+describe the allowlist as a complete provider-browser SSRF guarantee.
