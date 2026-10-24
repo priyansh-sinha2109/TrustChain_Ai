@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException
 
 from .config import Settings
 from .errors import AppError
-from .models import User
+from .models import User, ErrorEnvelope
 from .security import authenticate
 from .routes import router
 from .tinyfish import TinyFish
@@ -31,6 +31,7 @@ def create_app(settings: Settings | None = None, repository=None) -> FastAPI:
             await app.state.repository.close()
 
     app = FastAPI(title="TrustChain AI", version="0.1.0", lifespan=lifespan,
+                  responses={code: {"model": ErrorEnvelope} for code in (400,401,403,404,409,422,503)},
                   docs_url="/docs" if settings.environment == "development" else None,
                   openapi_url="/openapi.json" if settings.environment == "development" else None,
                   redoc_url=None)

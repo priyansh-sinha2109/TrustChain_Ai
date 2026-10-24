@@ -7,6 +7,16 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
+class ErrorDetail(BaseModel):
+    code: str
+    message: str
+    request_id: str
+
+
+class ErrorEnvelope(BaseModel):
+    error: ErrorDetail
+
+
 class DocumentType(StrEnum):
     RFQ = "RFQ"
     ACCEPTED_QUOTE = "ACCEPTED_QUOTE"

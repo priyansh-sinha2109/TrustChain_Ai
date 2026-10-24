@@ -302,7 +302,7 @@ class SupabaseAdapter:
             require(job.status in {"PROCESSING", "FAILED"}, "INVALID_JOB_TRANSITION", "Use atomic result persistence for terminal review states.", 409)
             connection.execute("""UPDATE public.investigation_jobs SET status=%s,stage=%s,
                 provider_run_id=%s,error_code=%s,provider_status=%s,provider_finished_at=%s,updated_at=clock_timestamp(),
-                lease_until=CASE WHEN %s='FAILED' THEN NULL ELSE lease_until END
+                lease_until=CASE WHEN %s='FAILED' THEN NULL ELSE clock_timestamp()+interval '5 minutes' END
                 WHERE id=%s""", (job.status, job.stage, job.provider_run_id, job.error_code,
                     job.provider_status, job.provider_finished_at, job.status, job.id))
             if job.provider_run_id:

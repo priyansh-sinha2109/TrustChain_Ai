@@ -69,3 +69,12 @@ pytest -v
 ```
 
 All 18 tests pass deterministically in under 0.2s.
+
+## Current integration branch
+
+`integration/backend-supabase` preserves both branches and adds the async Supabase adapter,
+transactional investigation jobs/results, real Storage signing, verified tenant resolution
+and reviewer baseline approval. See [integration migrations](docs/database/INTEGRATION_MIGRATIONS.md),
+[backend API handoff](docs/backend-api-contract.md) and [generated frontend types](docs/backend-api-types.ts).
+The earlier member summaries above describe their original delivery, not live deployment status.
+Hosted readiness requires a verified database connection, applied migrations and the opt-in live suite.

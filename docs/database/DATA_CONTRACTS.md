@@ -193,3 +193,13 @@ Final authority decision before advance disbursement:
   "justification": "Pre-advance verification identified +INR 240,000 unexpected advance exposure and a 2mm material thickness deficit. Hold payment until supplier re-issues compliant PI."
 }
 ```
+
+## Backend integration mapping (current)
+
+The authoritative frontend routes and request names remain in `docs/backend-api-contract.md`
+and `docs/backend-openapi.json`. Do not replace them with the historical suggested payloads
+above. `backend/app/supabase_adapter.py` bridges these dataclasses and TenantSecurityContext
+inside a PostgreSQL transaction. Its context comes from exactly one active membership queried
+server-side, never request.state.org_id/role supplied by the browser. The explicit translations
+and review/evidence status distinction are documented in the API handoff; TypeScript DTOs are
+available in `docs/backend-api-types.ts`.
