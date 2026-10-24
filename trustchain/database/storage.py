@@ -119,7 +119,7 @@ class StorageService:
         file_size: int,
         mime_type: str = "application/pdf",
         doc_id: Optional[uuid.UUID] = None,
-        expires_in_seconds: int = 3600,
+        expires_in_seconds: int = 7200,
     ) -> Dict[str, Any]:
         """
         Generates a restricted, short-lived upload instruction for the frontend.
@@ -128,6 +128,8 @@ class StorageService:
         is_valid, error_msg = self.validate_file_metadata(file_name, mime_type, file_size)
         if not is_valid:
             raise ValueError(error_msg)
+        if expires_in_seconds != 7200:
+            raise ValueError("Supabase signed uploads have a fixed two-hour lifetime.")
 
         target_doc_id = doc_id or uuid.uuid4()
         storage_key = self.generate_storage_key(org_id, case_id, target_doc_id)

@@ -131,6 +131,8 @@ class SupabaseAdapter:
         row = connection.execute("SELECT * FROM public.documents WHERE id=%s AND case_id=%s" +
             (" FOR UPDATE" if lock else ""), (document_id, case_id)).fetchone()
         require(row is not None)
+        require(row["storage_key"] == StorageService.generate_storage_key(context.org_id, case_id, document_id),
+            "OBJECT_ASSOCIATION_INVALID", "Document does not reference its canonical private object.", 409)
         approved = connection.execute("SELECT 1 FROM public.document_approvals WHERE document_id=%s AND sha256=%s",
             (document_id, row["sha256"])).fetchone() is not None
         require(row["doc_type"] in {"RFQ", "ACCEPTED_QUOTE", "PURCHASE_ORDER", "FINAL_PI"},
