@@ -1,5 +1,6 @@
 """Read-only hosted configuration audit. Never prints credentials or record contents."""
 import json
+import re
 from pathlib import Path
 
 import httpx
@@ -16,7 +17,8 @@ EXPECTED = {"organizations","organization_members","suppliers","purchase_cases",
 def audit(settings):
     report = {"local_migration_files": [p.name for p in sorted(
         (Path(__file__).resolve().parents[2]/"supabase"/"migrations").glob("*.sql"))],
-        "database_verified": False, "missing_tables": [], "live_storage_verified": False}
+        "database_connected": False, "database_verified": False,
+        "missing_tables": None, "live_storage_verified": False}
     key = settings.supabase_service_role_key.get_secret_value()
     if settings.supabase_url and key:
         try:
@@ -26,9 +28,11 @@ def audit(settings):
                 report["storage_api_http_status"]=response.status_code
                 if response.status_code==200:
                     report["buckets"]=[{"name":b["name"],"public":b["public"],
-                        "file_size_limit":b.get("file_size_limit")} for b in response.json()]
+                        "file_size_limit":b.get("file_size_limit"),
+                        "allowed_mime_types":b.get("allowed_mime_types")} for b in response.json()]
                     report["live_storage_verified"]=any(b["name"]=="case-documents" and
-                        not b["public"] and b.get("file_size_limit")==10_000_000 for b in response.json())
+                        not b["public"] and b.get("file_size_limit")==10_000_000
+                        and b.get("allowed_mime_types")==["application/pdf"] for b in response.json())
                 schema=client.get("/rest/v1/")
                 report["rest_schema_http_status"]=schema.status_code
                 if schema.status_code==200:
@@ -41,6 +45,8 @@ def audit(settings):
     try:
         with psycopg.connect(settings.database_url.get_secret_value(),connect_timeout=10) as connection:
             connection.execute("SET TRANSACTION READ ONLY")
+            report["database_connected"]=True
+            report["database_client_tls"]=bool(connection.pgconn.ssl_in_use)
             rows=connection.execute("SELECT relname,relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r'").fetchall()
             tables={name:rls for name,rls in rows}
             report["missing_tables"]=sorted(EXPECTED-set(tables))
@@ -52,6 +58,11 @@ def audit(settings):
             report["database_verified"]=not report["missing_tables"] and not report["rls_disabled"]
             report["policy_names"]=[row[0] for row in connection.execute(
                 "SELECT policyname FROM pg_policies WHERE schemaname IN ('public','storage') ORDER BY policyname").fetchall()]
+            expected_policies=set()
+            for path in (Path(__file__).resolve().parents[2]/"supabase"/"migrations").glob("*.sql"):
+                expected_policies.update(re.findall(r'CREATE POLICY\s+"([^"]+)"',path.read_text(encoding="utf-8"),re.I))
+            report["missing_policies"]=sorted(expected_policies-set(report["policy_names"]))
+            report["database_verified"] = report["database_verified"] and not report["missing_policies"]
     except psycopg.Error:
         report["database_error"]="DATABASE_AUDIT_UNAVAILABLE"
     return report

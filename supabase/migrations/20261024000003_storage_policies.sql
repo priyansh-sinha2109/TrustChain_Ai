@@ -40,7 +40,14 @@ ON CONFLICT (id) DO UPDATE SET
 -- 2. Storage RLS Policies on storage.objects
 -- ------------------------------------------------------------------------------
 -- Ensure RLS is enabled on storage.objects
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Hosted Supabase already enables RLS and owns this table with its Storage role.
+-- Do not issue a redundant ALTER against a provider-owned table.
+DO $$
+BEGIN
+    IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'storage.objects'::regclass) THEN
+        ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+    END IF;
+END $$;
 
 -- Policy 1: Organization Members can READ private documents in their organization path
 -- Path structure: {org_id}/{case_id}/{document_uuid}.pdf

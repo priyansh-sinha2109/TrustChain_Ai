@@ -14,6 +14,7 @@ htmlcov/
 !.env.example
 *.egg-info/
 tmp/
+supabase/.temp/
 node_modules/
 npm-debug.log*
 yarn-debug.log*
