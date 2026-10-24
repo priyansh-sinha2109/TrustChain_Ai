@@ -39,7 +39,7 @@ def request_fingerprint(data: InvestigationStart) -> str:
 
 
 def resolve_context(connection, user_id: UUID) -> TenantSecurityContext:
-    rows = connection.execute("SELECT org_id, role FROM public.organization_members WHERE user_id=%s",
+    rows = connection.execute("SELECT org_id, role FROM public.organization_members WHERE user_id=%s AND is_active FOR SHARE",
         (user_id,)).fetchall()
     require(len(rows) == 1, "MEMBERSHIP_REQUIRED" if not rows else "AMBIGUOUS_MEMBERSHIP",
         "Exactly one active organisation membership is required.", 403)

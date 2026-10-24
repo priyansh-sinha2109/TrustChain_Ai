@@ -34,6 +34,8 @@ def test_context_comes_from_database():
     connection.execute.return_value.fetchall.return_value = [{"org_id": org, "role": "buyer"}]
     context = resolve_context(connection, user)
     assert context.user_id == user and context.org_id == org and context.role.value == "buyer"
+    query, params = connection.execute.call_args.args
+    assert "is_active" in query and "FOR SHARE" in query and params == (user,)
 
 
 @pytest.mark.parametrize("rows", [[], [{"org_id": uuid4(), "role": "buyer"},
