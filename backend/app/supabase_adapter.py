@@ -18,7 +18,7 @@ from trustchain.database.client import SupabaseClientConfig
 from trustchain.database.models import DocTypeEnum, RoleEnum, DecisionEnum
 from trustchain.database.repository import SupabaseRepository
 from trustchain.database.security import TenantAuthorizer, TenantSecurityContext
-from trustchain.database.storage import StorageService
+from trustchain.database.storage import StorageService, StorageError
 from trustchain.database.transaction_client import TransactionClient
 
 from .config import Settings
@@ -86,6 +86,8 @@ class SupabaseAdapter:
                 return operation(connection, repo, context, *args)
         except PermissionError:
             raise AppError("FORBIDDEN", "This action is not permitted for this tenant or role.", 403) from None
+        except StorageError as exc:
+            raise AppError(exc.code, exc.message, exc.status) from None
         except psycopg.Error:
             raise AppError("DATABASE_UNAVAILABLE", "Database operation could not be completed.", 503) from None
 
@@ -174,6 +176,13 @@ class SupabaseAdapter:
             content = self.storage.download_document(ticket["storage_key"], context.org_id, case_id)
             require(len(content) == ticket["file_size"], "INVALID_DOCUMENT_SIZE", "Uploaded object size differs from its reservation.", 422)
             digest = self.storage.compute_sha256(content)
+            from .extraction import extract_pdf
+            try:
+                extract_pdf(Document(id=document_id, case_id=case_id, document_type=ticket["doc_type"],
+                    size_bytes=len(content)), content)
+            except AppError as exc:
+                if exc.code != "OCR_REQUIRED":
+                    raise
             repo.register_document(context, case_id=case_id, doc_type=DocTypeEnum(ticket["doc_type"]),
                 storage_key=ticket["storage_key"], file_name=ticket["file_name"], file_size=len(content),
                 supplier_id=case.supplier_id, sha256=digest, document_id=document_id)
