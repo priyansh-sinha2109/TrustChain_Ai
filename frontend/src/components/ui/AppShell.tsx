@@ -16,6 +16,7 @@ import {
   X,
   ChevronDown,
   CreditCard,
+  Award,
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
@@ -73,7 +74,13 @@ export function AppShell({ children, breadcrumb = "Workspace / Overview" }: AppS
       label: "Investigations",
       href: "/cases",
       icon: FolderOpen,
-      active: pathname.startsWith("/cases") && !pathname.includes("/review") && !pathname.includes("/reports") && !pathname.includes("/payment"),
+      active: pathname.startsWith("/cases") && !pathname.includes("/review") && !pathname.includes("/reports") && !pathname.includes("/payment") && pathname !== "/vendors",
+    },
+    {
+      label: "Trust Directory",
+      href: "/vendors",
+      icon: Award,
+      active: pathname === "/vendors",
     },
     {
       label: "Human review",
