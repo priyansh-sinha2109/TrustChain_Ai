@@ -23,6 +23,7 @@ import {
   Scale,
   Sparkles,
   CreditCard,
+  FileCheck2,
 } from "lucide-react";
 
 export default function FindingsPage({
@@ -384,6 +385,14 @@ export default function FindingsPage({
                 >
                   <CreditCard className="w-3.5 h-3.5" />
                   <span>Direct Supplier Pay (Razorpay)</span>
+                </Link>
+
+                <Link
+                  href={`/cases/${id}/mtc`}
+                  className="w-full py-2.5 px-3 rounded-lg text-xs font-bold text-red-900 bg-red-50 hover:bg-red-100 border border-red-200 flex items-center justify-center gap-2 shadow-2xs transition-colors"
+                >
+                  <FileCheck2 className="w-3.5 h-3.5 text-red-600" />
+                  <span>Inspect Mill Test Certificate (MTC)</span>
                 </Link>
               </div>
             </div>

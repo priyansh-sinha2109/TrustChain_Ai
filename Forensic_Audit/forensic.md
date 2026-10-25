@@ -196,6 +196,27 @@ To empower buyers and small manufacturing businesses to pay with confidence, the
   - Zero modification to existing routes or state structures.
 
 ---
+
+## 10. Solving MSME Raw Material Sourcing Risks: Winning Features Implemented
+
+### 10.1 Feature 1: Centralized B2B Vendor Trust Rating & Credential Directory (`/vendors`)
+* **Problem Addressed:** Small businesses lack a centralized verification system or empirical trust rating infrastructure to validate vendor credentials before placing purchase orders.
+* **Implementation:** Built [`/vendors`](file:///d:/Desktop/TrustChain-Ai/TrustChain_Ai/frontend/src/app/vendors/page.tsx) featuring:
+  - Empirical 0–100 TrustScore based on IAF CertSearch accreditation, physical MTC lab pass rates, and contractual dispute records.
+  - Multi-tier classification: Tier A (Prime Mills), Tier B (Caution / Guarded Advance), Tier C (High Risk / 0% Advance).
+  - Searchable by vendor name, GSTIN, and raw material category.
+  - Integrated with `AppShell.tsx` navigation.
+
+### 10.2 Feature 2: Digital Mill Test Certificate (MTC) & Raw Material Quality Specification Verifier (`/cases/[id]/mtc`)
+* **Problem Addressed:** Unfamiliar suppliers frequently deliver substandard goods, inconsistent quality, or commit outright specification fraud by substituting commercial grade steel for ordered precision blanks.
+* **Implementation:** Built [`/cases/[id]/mtc`](file:///d:/Desktop/TrustChain-Ai/TrustChain_Ai/frontend/src/app/cases/[id]/mtc/page.tsx) featuring:
+  - **Spectrometer Chemical Analysis:** Verifies Carbon (C), Manganese (Mn), Silicon (Si), Sulphur (S), and Phosphorus (P) against IS 2062 / EN 10204 3.1 standards.
+  - **Mechanical & Gauge Inspection:** Uncovers gauge downgrades (ordered 8.00mm vs delivered 6.00mm) and yield strength deficits.
+  - **Traceable Heat Ladle Verification:** Checks heat batch numbers against primary mill records.
+  - **Razorpay Escrow Integration:** Triggers automated freezing of milestone balances and issues formal Non-Conformance Notices (NCR).
+
+---
 *Report certified by Team Ashwamedha (Member 2 — Senior Frontend & Integration Lead).*
+
 
 
