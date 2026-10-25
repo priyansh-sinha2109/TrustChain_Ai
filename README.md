@@ -10,7 +10,7 @@
 ![Razorpay](https://img.shields.io/badge/Razorpay-Milestone_Settlement-002970?style=for-the-badge&logo=razorpay)
 
 **Evidence-Backed Pre-Advance Purchasing Verification & B2B Trust Infrastructure for Indian Manufacturing MSMEs**  
-*Built with ❤️ by Team Ashwamedha for HackIIITD 2026*
+*Built with ❤️ by Team Ashwamedha for HackIIITD 2026 (24-Hour Hackathon)*
 
 [Features](#-key-features) • [TinyFish Agent](#-tinyfish-autonomous-web-agent-integration) • [Architecture](#-system-architecture) • [API Contract](#-api-endpoints) • [Quick Start](#-quick-start-guide)
 
@@ -203,7 +203,7 @@ npm run dev
 
 ---
 
-## 👥 Team Ashwamedha — HackIIITD 2026
+## 👥 Team Ashwamedha — HackIIITD 2026 (24-Hour Hackathon)
 
 * **Priyansh Sinha** — Backend & AI Agent Architecture
 * **Gaurav Tiwari** — Frontend Architecture & UI/UX Implementation

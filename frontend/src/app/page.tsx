@@ -307,7 +307,7 @@ export default function LandingPage() {
           </div>
 
           <div className="text-xs text-gray-400 text-center md:text-right">
-            Built by Team Ashwamedha · 18-hour hackathon origin · 2026
+            Built by Team Ashwamedha · 24-hour hackathon origin · 2026
           </div>
         </div>
       </footer>
