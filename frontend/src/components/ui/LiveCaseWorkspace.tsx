@@ -84,6 +84,7 @@ export function LiveCaseWorkspace({ id, view }: { id: string; view: View }) {
     if (!data || !purchase || !job) return;
     setBusy(true);
     try {
+      // @ts-expect-error dynamic jspdf import
       const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF();
       let y = 18;

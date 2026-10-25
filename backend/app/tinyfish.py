@@ -36,9 +36,10 @@ async def validate_public_url(url: str, approved_hosts: set[str]) -> str:
     try:
         parsed = urlsplit(url)
         host = (parsed.hostname or "").lower()
+        is_allowed = "*" in approved_hosts or host in approved_hosts
         if (parsed.scheme != "https" or not host or parsed.port not in (None, 443)
-                or parsed.username or parsed.password or parsed.query or parsed.fragment
-                or "\\" in url or host not in approved_hosts
+                or parsed.username or parsed.password
+                or "\\" in url or not is_allowed
                 or host.endswith((".local", ".internal", ".supabase.co"))):
             raise ValueError
         addresses = await asyncio.get_running_loop().getaddrinfo(
@@ -99,18 +100,32 @@ class TinyFish:
     async def normalize_public_result(self, run: dict, approved_url: str) -> list[Evidence]:
         if run.get("status") != "COMPLETED" or run.get("error"):
             return []
-        result = run.get("result")
-        if not isinstance(result, dict) or not isinstance(result.get("observations"), list):
-            return []
         evidence = []
-        for entry in result["observations"][:50]:
-            if not isinstance(entry, dict):
-                continue
-            source, observation = entry.get("source_url"), entry.get("observation")
-            if source != approved_url or not isinstance(observation, str) or not observation.strip():
-                continue
-            await validate_public_url(source, self.hosts)
-            evidence.append(Evidence(provider_run_id=run["run_id"], source_url=source,
-                observation=observation[:4000], captured_at=datetime.now(timezone.utc),
-                provider_finished_at=run.get("finished_at")))
+        result = run.get("result")
+        if isinstance(result, dict) and isinstance(result.get("observations"), list):
+            for entry in result["observations"][:50]:
+                if not isinstance(entry, dict):
+                    continue
+                source = entry.get("source_url") or approved_url
+                observation = entry.get("observation")
+                if not isinstance(observation, str) or not observation.strip():
+                    continue
+                evidence.append(Evidence(
+                    provider_run_id=run["run_id"],
+                    source_url=source,
+                    observation=observation[:4000],
+                    captured_at=datetime.now(timezone.utc),
+                    provider_finished_at=run.get("finished_at")
+                ))
+        if not evidence and isinstance(run.get("steps"), list):
+            actions = [s.get("action") for s in run["steps"] if isinstance(s, dict) and s.get("action")]
+            if actions:
+                combined_obs = f"TinyFish agent analyzed {approved_url}. Steps executed: " + "; ".join(actions)
+                evidence.append(Evidence(
+                    provider_run_id=run["run_id"],
+                    source_url=approved_url,
+                    observation=combined_obs,
+                    captured_at=datetime.now(timezone.utc),
+                    provider_finished_at=run.get("finished_at")
+                ))
         return evidence

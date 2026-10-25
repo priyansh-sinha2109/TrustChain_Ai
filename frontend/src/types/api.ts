@@ -191,3 +191,31 @@ export type User = {
   org_id?: string;
   org_name?: string;
 };
+
+export type RazorpayOrder = {
+  order_id: string;
+  amount: number;
+  amount_inr: number;
+  currency: string;
+  key_id: string;
+  supplier_name: string;
+  case_id: string;
+  milestone: string;
+  status: string;
+  notes?: Record<string, string>;
+};
+
+export type PaymentReceipt = {
+  verified: boolean;
+  payment_id: string;
+  order_id: string;
+  case_id: string;
+  amount: number;
+  currency: string;
+  supplier_name: string;
+  receipt_id: string;
+  status: string;
+  timestamp: string;
+  audit_message: string;
+};
+

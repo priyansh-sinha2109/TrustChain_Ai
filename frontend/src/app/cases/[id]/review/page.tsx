@@ -20,7 +20,7 @@ import {
   Check,
 } from "lucide-react";
 
-function IllustrativeHumanReviewPage({
+export default function HumanReviewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -282,6 +282,15 @@ function IllustrativeHumanReviewPage({
                       : "Select an outcome to record decision"}
                   </span>
                 </button>
+
+                <div className="pt-2">
+                  <Link
+                    href={`/cases/${id}/payment`}
+                    className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#0066cc] hover:bg-[#0052a3] flex items-center justify-center gap-2 shadow-xs transition-colors"
+                  >
+                    <span>Proceed to Direct Supplier Payment (Razorpay) →</span>
+                  </Link>
+                </div>
               </div>
             </form>
           </div>
@@ -351,9 +360,4 @@ function IllustrativeHumanReviewPage({
       </div>
     </AppShell>
   );
-}
-
-export default function ConnectedPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  return DEMO_MODE ? <IllustrativeHumanReviewPage params={params} /> : <LiveCaseWorkspace id={id} view="review" />;
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { Finding, Evidence } from "@/types/api";
 import { X, ExternalLink, ArrowLeft, ArrowRight, ShieldAlert } from "lucide-react";
 
@@ -6,12 +7,14 @@ interface EvidenceDrawerProps {
   finding: Finding | null;
   onClose: () => void;
   evidenceList?: Evidence[];
+  caseId?: string;
 }
 
 export function EvidenceDrawer({
   finding,
   onClose,
   evidenceList = [],
+  caseId,
 }: EvidenceDrawerProps) {
   if (!finding) return null;
 
@@ -178,6 +181,15 @@ export function EvidenceDrawer({
                   No public anomalies detected. Contractual discrepancies remain binding.
                 </p>
               )}
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 flex justify-end">
+              <Link
+                href={`/cases/${caseId || "TC-189"}/evidence?tab=public`}
+                className="text-xs text-[#0d5e4b] hover:underline font-semibold flex items-center gap-1"
+              >
+                <span>Inspect full TinyFish live crawler analysis &amp; MSME risk report →</span>
+              </Link>
             </div>
           </div>
         </div>
