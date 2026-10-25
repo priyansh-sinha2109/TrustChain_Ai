@@ -1,4 +1,21 @@
-import type { Case, CaseCreate, Document, Evidence, FindingsResponse, InvestigationStart, Job, JobAccepted, Review, UploadIntent, UploadTarget } from "@/types/api";
+import type {
+  Case,
+  CaseCreate,
+  Document,
+  Evidence,
+  FindingsResponse,
+  InvestigationStart,
+  Job,
+  JobAccepted,
+  Review,
+  UploadIntent,
+  UploadTarget,
+  VendorProfile,
+  MtcReport,
+  MtcVerifyResult,
+  MtcDisputeResult,
+  PaymentsSummary,
+} from "@/types/api";
 import { getAccessToken } from "./supabase";
 import { MOCK_CASES, MOCK_DOCUMENTS, MOCK_FINDINGS_TC024, MOCK_JOB_TC024 } from "./mockData";
 
@@ -118,6 +135,42 @@ export const api = {
         audit_message: `Verified direct supplier advance payment of ₹${payload.amount.toLocaleString()} disbursed to ${payload.supplier_name || "Kaveri Metalworks"} under TrustChain guardrails.`,
       };
     }
+  },
+  async getPayments(caseId: string): Promise<PaymentsSummary> {
+    try {
+      return await request(`/api/v1/cases/${caseId}/payments`);
+    } catch {
+      return { case_id: caseId, payments: [], total_paid: 0 };
+    }
+  },
+  async getVendors(q = "", tier = "ALL"): Promise<VendorProfile[]> {
+    try {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (tier && tier !== "ALL") params.set("tier", tier);
+      const query = params.toString() ? `?${params.toString()}` : "";
+      return await request(`/api/v1/vendors${query}`);
+    } catch {
+      return [];
+    }
+  },
+  async getVendor(id: string): Promise<VendorProfile> {
+    return request(`/api/v1/vendors/${id}`);
+  },
+  async getCaseMtc(caseId: string): Promise<MtcReport> {
+    return request(`/api/v1/cases/${caseId}/mtc`);
+  },
+  async verifyMtcHeat(caseId: string, heatNumber: string): Promise<MtcVerifyResult> {
+    return request(`/api/v1/cases/${caseId}/mtc/verify`, {
+      method: "POST",
+      body: JSON.stringify({ heat_number: heatNumber }),
+    });
+  },
+  async dispatchMtcDispute(caseId: string, payload: { supplier_name?: string; amount_frozen?: number }): Promise<MtcDisputeResult> {
+    return request(`/api/v1/cases/${caseId}/mtc/dispute`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
   async getCases(): Promise<Case[]> {
     if (DEMO_MODE) return MOCK_CASES;

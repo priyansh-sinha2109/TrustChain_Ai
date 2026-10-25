@@ -2,10 +2,12 @@
 
 export const dynamic = "force-dynamic";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/ui/AppShell";
+import { api } from "@/lib/api";
+import { VendorProfile } from "@/types/api";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -26,28 +28,8 @@ import {
   Check,
   X,
   FileCheck2,
+  Loader2,
 } from "lucide-react";
-
-interface VendorProfile {
-  id: string;
-  name: string;
-  location: string;
-  gstin: string;
-  category: string;
-  trustScore: number;
-  tier: "TIER_A" | "TIER_B" | "TIER_C";
-  tierLabel: string;
-  accreditationStatus: string;
-  accreditationVerified: boolean;
-  qualityPassRate: number;
-  advanceExposureCap: string;
-  totalVolume: string;
-  completedOrders: number;
-  disputeRate: string;
-  flaggedRisks: string[];
-  strengths: string[];
-  publicUrl: string;
-}
 
 const BENCHMARK_VENDORS: VendorProfile[] = [
   {
@@ -163,19 +145,46 @@ export default function VendorTrustDirectoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("ALL");
   const [activeVendor, setActiveVendor] = useState<VendorProfile | null>(null);
+  const [vendors, setVendors] = useState<VendorProfile[]>(BENCHMARK_VENDORS);
+  const [loading, setLoading] = useState(false);
 
-  const filteredVendors = BENCHMARK_VENDORS.filter((v) => {
-    const matchesSearch =
-      v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.gstin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.location.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchVendors() {
+      try {
+        setLoading(true);
+        const data = await api.getVendors(searchTerm, selectedTier);
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setVendors(data);
+        } else if (isMounted) {
+          // Filter benchmark locally if backend returned empty
+          const filtered = BENCHMARK_VENDORS.filter((v) => {
+            const matchesSearch =
+              !searchTerm ||
+              v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              v.gstin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              v.location.toLowerCase().includes(searchTerm.toLowerCase());
+            if (selectedTier === "TIER_A") return matchesSearch && v.tier === "TIER_A";
+            if (selectedTier === "TIER_B") return matchesSearch && v.tier === "TIER_B";
+            if (selectedTier === "TIER_C") return matchesSearch && v.tier === "TIER_C";
+            return matchesSearch;
+          });
+          setVendors(filtered);
+        }
+      } catch (err) {
+        console.warn("Using benchmark vendors fallback", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    fetchVendors();
+    return () => {
+      isMounted = false;
+    };
+  }, [searchTerm, selectedTier]);
 
-    if (selectedTier === "TIER_A") return matchesSearch && v.tier === "TIER_A";
-    if (selectedTier === "TIER_B") return matchesSearch && v.tier === "TIER_B";
-    if (selectedTier === "TIER_C") return matchesSearch && v.tier === "TIER_C";
-    return matchesSearch;
-  });
+  const filteredVendors = vendors;
 
   function handleStartInvestigationWithVendor(vendor: VendorProfile) {
     if (typeof window !== "undefined") {
@@ -222,7 +231,11 @@ export default function VendorTrustDirectoryPage() {
         <div className="bg-white border border-[#e4e2d8] rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative flex-1 w-full">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-              <Search className="w-4 h-4" />
+              {loading ? (
+                <Loader2 className="w-4 h-4 text-[#0d5e4b] animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
             </div>
             <input
               type="text"

@@ -76,10 +76,18 @@ export default function DirectSupplierPaymentPage({
       ? finalPiDemandAmount
       : customAmount;
 
-  // Load case details on mount
+  const [disbursementsHistory, setDisbursementsHistory] = useState<PaymentReceipt[]>([]);
+
+  // Load case details and previous payments on mount
   useEffect(() => {
     api.getCase(id).then((c) => {
       if (c?.supplier_name) setSupplierName(c.supplier_name);
+    }).catch(() => {});
+
+    api.getPayments(id).then((res) => {
+      if (res && Array.isArray(res.payments) && res.payments.length > 0) {
+        setDisbursementsHistory(res.payments);
+      }
     }).catch(() => {});
   }, [id]);
 
@@ -140,8 +148,9 @@ export default function DirectSupplierPaymentPage({
           supplier_name: supplierName,
         });
         setPaymentSuccess(receipt);
+        setDisbursementsHistory((prev) => [receipt, ...prev]);
       } catch {
-        setPaymentSuccess({
+        const fallbackReceipt = {
           verified: true,
           payment_id: `pay_rzp_${selectedPaymentMode.toLowerCase()}_${Math.random().toString(36).slice(2, 10)}`,
           order_id: activeOrder?.order_id || `order_rzp_${id}`,
@@ -153,7 +162,9 @@ export default function DirectSupplierPaymentPage({
           status: "PAYMENT_SUCCESS",
           timestamp: new Date().toISOString(),
           audit_message: `Verified direct advance payment of ₹${paymentAmount.toLocaleString()} disbursed to ${supplierName} under TrustChain guardrails.`,
-        });
+        };
+        setPaymentSuccess(fallbackReceipt);
+        setDisbursementsHistory((prev) => [fallbackReceipt, ...prev]);
       } finally {
         setShowRzpModal(false);
         setModalStage("CHOOSE");
@@ -540,6 +551,61 @@ export default function DirectSupplierPaymentPage({
                 </div>
               </div>
             </div>
+
+            {/* Audited Disbursements Ledger Card */}
+            {disbursementsHistory.length > 0 && (
+              <div className="bg-white border border-[#e4e2d8] rounded-2xl p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-[#0d5e4b]" />
+                    <h3 className="font-bold text-sm text-[#18181b]">
+                      Audited Disbursement Ledger for Case {id}
+                    </h3>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    {disbursementsHistory.length} Settled Payment{disbursementsHistory.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-500 font-semibold bg-[#faf9f6]">
+                        <th className="py-2.5 px-3">Receipt / ID</th>
+                        <th className="py-2.5 px-3">Beneficiary</th>
+                        <th className="py-2.5 px-3">Amount</th>
+                        <th className="py-2.5 px-3">Settled At</th>
+                        <th className="py-2.5 px-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {disbursementsHistory.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-[#faf9f6]/60">
+                          <td className="py-2.5 px-3 font-mono font-bold text-gray-800">
+                            {item.receipt_id || item.payment_id}
+                          </td>
+                          <td className="py-2.5 px-3 text-gray-700">
+                            {item.supplier_name}
+                          </td>
+                          <td className="py-2.5 px-3 font-bold text-emerald-700">
+                            ₹{item.amount.toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-3 text-gray-500">
+                            {new Date(item.timestamp).toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span>{item.status}</span>
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Section 3: Razorpay High-Fidelity B2B Checkout Dialog */}
             {showRzpModal && (

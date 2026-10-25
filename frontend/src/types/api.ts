@@ -219,3 +219,89 @@ export type PaymentReceipt = {
   audit_message: string;
 };
 
+export type PaymentsSummary = {
+  case_id: string;
+  payments: PaymentReceipt[];
+  total_paid: number;
+};
+
+export type VendorProfile = {
+  id: string;
+  name: string;
+  location: string;
+  gstin: string;
+  category: string;
+  trustScore: number;
+  tier: "TIER_A" | "TIER_B" | "TIER_C";
+  tierLabel: string;
+  accreditationStatus: string;
+  accreditationVerified: boolean;
+  qualityPassRate: number;
+  advanceExposureCap: string;
+  totalVolume: string;
+  completedOrders: number;
+  disputeRate: string;
+  flaggedRisks: string[];
+  strengths: string[];
+  publicUrl: string;
+};
+
+export type ChemicalElement = {
+  symbol: string;
+  name: string;
+  requiredMax: number;
+  actualFound: number;
+  unit: string;
+  status: "PASS" | "FAIL";
+};
+
+export type MechanicalProperty = {
+  property: string;
+  standard: string;
+  required: string;
+  actual: string;
+  status: "PASS" | "FAIL";
+};
+
+export type MtcReport = {
+  case_id: string;
+  supplier_name: string;
+  po_reference: string;
+  certificate_type: string;
+  heat_number: string;
+  ladle_origin: string;
+  verdict: "CONFORMING" | "NON_CONFORMING";
+  verdict_summary: string;
+  tests_passed: number;
+  tests_failed: number;
+  chemical_composition: ChemicalElement[];
+  mechanical_tests: MechanicalProperty[];
+  hedging_action: {
+    action: string;
+    amount_withheld: number;
+    currency: string;
+    dispute_notice_available: boolean;
+  };
+};
+
+export type MtcVerifyResult = {
+  case_id: string;
+  heat_number: string;
+  verified: boolean;
+  found_in_primary_mill_registry: boolean;
+  origin_status: string;
+  verdict: string;
+  timestamp: string;
+};
+
+export type MtcDisputeResult = {
+  dispute_id: string;
+  case_id: string;
+  supplier_name: string;
+  reason: string;
+  amount_frozen: number;
+  status: string;
+  timestamp: string;
+};
+
+
